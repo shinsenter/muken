@@ -1,0 +1,5 @@
+# Site on GitHub Pages: the README is the home page, with a theme that GitHub already provides.
+theme: jekyll-theme-minimal
+title: muken
+description: Put your Docker app on a server you own, with no downtime and no manual steps.
+show_downloads: false

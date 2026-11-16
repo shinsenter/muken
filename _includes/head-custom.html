@@ -1,0 +1,28 @@
+{%- comment -%}
+  The theme does not draw mermaid diagrams. This loads mermaid only on a page that has one,
+  so other pages stay light. The file comes from jsDelivr and the browser checks its hash.
+{%- endcomment -%}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var blocks = document.querySelectorAll('div.language-mermaid');
+    if (!blocks.length) return;
+
+    // kramdown wraps a code block in divs. mermaid wants <pre class="mermaid"> with the plain text.
+    blocks.forEach(function (block) {
+      var pre = document.createElement('pre');
+      pre.className = 'mermaid';
+      pre.textContent = block.querySelector('code').textContent;
+      block.replaceWith(pre);
+    });
+
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.min.js';
+    script.integrity = 'sha384-HHW54r639fK42Ip0coGF3mz8oSiGn0eEoWNTLs75X7H63pLSDBa0Tqs0RwGmLlXE';
+    script.crossOrigin = 'anonymous';
+    script.onload = function () {
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      mermaid.run();
+    };
+    document.head.appendChild(script);
+  });
+</script>

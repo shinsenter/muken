@@ -92,11 +92,17 @@ One or two sentences.
 ## tasks.md
 
 ```markdown
+## Context
+Read: <the specs and files the tasks need>
+Skip: <anything big and unrelated>
+
 ## 1. <group>
-- [ ] 1.1 <one small task, with the check that proves it>
+- [ ] 1.1 <one small task. Name the files it touches. End with the check: `make t PKG=... RUN=...`>
+
+## Log
 ```
 
-A task fits in one iteration. If it does not, split it.
+A task fits in one iteration. If it does not, split it. The `Context` block is the task card: an agent reads it and the files it names, and nothing more. The last log line starts with `Next:`.
 
 ## Tools
 

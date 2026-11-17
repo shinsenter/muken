@@ -10,6 +10,8 @@ You need Go 1.26 or newer. Run everything from the root of the repository.
 
 ```shell
 go test ./...                          # all tests, offline, a few seconds
+make check                             # vet, tests and gofmt in one command. It prints only problems
+make check-ci                          # the same with no home and no ssh-agent, like CI
 go test ./internal/deploy -run Rollback -v   # one test, with its output
 go vet ./...                           # the checks the compiler does not do
 gofmt -l .                             # lists files that are not formatted. gofmt -w . fixes them

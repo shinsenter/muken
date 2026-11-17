@@ -66,6 +66,15 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 - The Docker example mounts only what muken needs. The age key is `.muken/age.key` and the SSH key is `.muken/.ssh`, so `-v "$PWD":/work` carries both.
 - After a docs change, read it again as the user. Look for contradictions, old versions (the Go version comes from `go.mod`) and claims that the code does not back.
 
+## Task rules
+
+- Dependency change: run `scripts/third-party-notices.sh` and commit `THIRD_PARTY_NOTICES.txt`. Run `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` after the change and before a release. Keep dependencies and the base image current, so known CVEs do not ship.
+- Code change: change `docs/guide.md` and `CHANGELOG.md` with the code.
+- Commit types follow semver: `feat:` is a minor bump, `fix:` a patch bump, `!` a major bump.
+- Tag `vX.Y.Z` on `main` starts the `release` workflow. Never tag without being asked.
+- Do not accept code that you cannot license under `CONTRIBUTING.md`, for example code copied from a GPL project.
+- The name "muken" is covered by `TRADEMARK.md`, not by the license.
+
 ## Constraints
 
 One server per app. Debian and Ubuntu servers only. No load balancer over several servers. No database backups. No migration rollback. No Cloud Run.

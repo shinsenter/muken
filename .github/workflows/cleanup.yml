@@ -3,6 +3,7 @@
 #
 #   schedule: every Monday, N = 7
 #   manual:   Actions tab -> Cleanup -> Run workflow. Set "days", and tick "dry_run" to only list.
+#             days = 0 deletes every finished run.
 #
 # The API returns up to 1,000 runs per search, so a long backlog takes a few weekly runs.
 
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       days:
-        description: Delete runs older than this many days
+        description: Delete runs older than this many days (0 = all finished runs)
         type: string
         default: '7'
       dry_run:
@@ -40,8 +41,8 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
-          if ! [[ "$DAYS" =~ ^[1-9][0-9]*$ ]]; then
-            echo "days must be a whole number, 1 or more. Got '$DAYS'" >&2
+          if ! [[ "$DAYS" =~ ^(0|[1-9][0-9]*)$ ]]; then
+            echo "days must be a whole number, 0 or more. Got '$DAYS'" >&2
             exit 1
           fi
           cutoff="$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)"

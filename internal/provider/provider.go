@@ -28,8 +28,9 @@ type CreateOptions struct {
 }
 
 type Server struct {
-	ID string
-	IP string
+	ID   string
+	IP   string
+	User string // SSH user when it is not root
 }
 
 type Choice struct {
@@ -46,7 +47,7 @@ type Provider interface {
 	Delete(ctx context.Context, id string) error
 }
 
-var Names = []string{"digitalocean", "hetzner", "vultr"}
+var Names = []string{"digitalocean", "hetzner", "vultr", "aws"}
 
 func New(name string) (Provider, error) {
 	switch name {
@@ -54,6 +55,8 @@ func New(name string) (Provider, error) {
 		return NewDigitalOcean(os.Getenv("DIGITALOCEAN_TOKEN")), nil
 	case "hetzner":
 		return NewHetzner(os.Getenv("HCLOUD_TOKEN")), nil
+	case "aws":
+		return awsFromEnv(), nil
 	case "vultr":
 		return NewVultr(os.Getenv("VULTR_API_KEY")), nil
 	}

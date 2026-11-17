@@ -68,7 +68,7 @@ func cmdServer(ctx context.Context, p *ui.Printer, args []string) error {
 	var global commonFlags
 	var flags serverFlags
 	flagSet := newFlags("server", &global)
-	providerName := flagSet.String("provider", "", "digitalocean, hetzner or vultr")
+	providerName := flagSet.String("provider", "", "digitalocean, hetzner, vultr or aws")
 	flagSet.StringVar(&flags.region, "region", "", "region or location")
 	flagSet.StringVar(&flags.size, "size", "", "plan")
 	flagSet.StringVar(&flags.name, "name", "", "server name")
@@ -137,6 +137,14 @@ func deleteServer(ctx context.Context, p *ui.Printer, cloud provider.Provider, a
 	return nil
 }
 
+// userLine is the extra muken.yaml line for a server that has no root login.
+func userLine(user string) string {
+	if user == "" {
+		return ""
+	}
+	return "\n    user: " + user
+}
+
 func createServer(ctx context.Context, p *ui.Printer, global commonFlags, cloud provider.Provider, flags serverFlags) error {
 	key, err := publicKey(flags.pubKey)
 	if err != nil {
@@ -184,14 +192,17 @@ func createServer(ctx context.Context, p *ui.Printer, global commonFlags, cloud 
 	p.OK("Server %s created at %s (id %s)", name, created.IP, created.ID)
 
 	if cfgErr != nil {
-		p.Info("\nPut this in muken.yaml:\n  server:\n    host: %s", created.IP)
+		p.Info("\nPut this in muken.yaml:\n  server:\n    host: %s%s", created.IP, userLine(created.User))
 		return nil
 	}
 	cfg.Server.Host = created.IP
+	if created.User != "" {
+		cfg.Server.User = created.User
+	}
 	if err := writeConfig(global.config, "# muken config. Reference: https://github.com/shinsenter/muken/blob/main/docs/guide.md\n", cfg); err != nil {
 		return err
 	}
-	p.OK("Saved server.host in %s", global.config)
+	p.OK("Saved the server address in %s", global.config)
 	p.Step("Waiting for SSH")
 	if err := waitSSH(ctx, p, cfg); err != nil {
 		return err

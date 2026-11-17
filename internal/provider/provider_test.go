@@ -221,12 +221,12 @@ func TestVultrSizesAreCheapestFirst(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	for _, n := range []string{"digitalocean", "do", "hetzner", "vultr"} {
+	for _, n := range []string{"digitalocean", "do", "hetzner", "vultr", "aws"} {
 		if _, err := New(n); err != nil {
 			t.Errorf("%s: %v", n, err)
 		}
 	}
-	if _, err := New("aws"); err == nil {
+	if _, err := New("nope"); err == nil {
 		t.Fatal("unknown provider must fail")
 	}
 }

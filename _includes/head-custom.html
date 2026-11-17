@@ -20,9 +20,44 @@
     script.integrity = 'sha384-HHW54r639fK42Ip0coGF3mz8oSiGn0eEoWNTLs75X7H63pLSDBa0Tqs0RwGmLlXE';
     script.crossOrigin = 'anonymous';
     script.onload = function () {
-      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      mermaid.initialize({ startOnLoad: false, theme: 'dark' });
       mermaid.run();
     };
     document.head.appendChild(script);
+  });
+</script>
+
+{%- comment -%}
+  GitHub draws "> [!NOTE]" as a box. Jekyll leaves it as a plain quote that starts with "[!NOTE]".
+  This turns those quotes into the same boxes: NOTE, TIP, IMPORTANT, WARNING and CAUTION.
+{%- endcomment -%}
+<style>
+  blockquote.alert { border-left: 4px solid var(--alert); padding: 0.1rem 1rem; margin: 1rem 0; background: rgba(128, 128, 128, 0.1); }
+  blockquote.alert p { margin: 0.5rem 0; }
+  blockquote.alert .alert-title { font-weight: 600; color: var(--alert); }
+  blockquote.alert-note { --alert: #4493f8; }
+  blockquote.alert-tip { --alert: #3fb950; }
+  blockquote.alert-important { --alert: #ab7df8; }
+  blockquote.alert-warning { --alert: #d29922; }
+  blockquote.alert-caution { --alert: #f85149; }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var titles = { NOTE: 'Note', TIP: 'Tip', IMPORTANT: 'Important', WARNING: 'Warning', CAUTION: 'Caution' };
+    var marker = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/;
+
+    document.querySelectorAll('blockquote').forEach(function (quote) {
+      var first = quote.querySelector('p');
+      var text = first && first.firstChild;
+      var match = text && text.nodeType === 3 && text.nodeValue.match(marker);
+      if (!match) return;
+
+      text.nodeValue = text.nodeValue.slice(match[0].length);
+      var title = document.createElement('p');
+      title.className = 'alert-title';
+      title.textContent = titles[match[1]];
+      quote.insertBefore(title, first);
+      quote.classList.add('alert', 'alert-' + match[1].toLowerCase());
+    });
   });
 </script>

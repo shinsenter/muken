@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>muken</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 1.5rem; background: #fafafa; color: #1c1c1c; }
+  h1 { font-size: 1.2rem; margin: 0 0 1rem; }
+  h2 { font-size: 1rem; margin: 1.5rem 0 .5rem; }
+  table { border-collapse: collapse; width: 100%; background: #fff; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #e6e6e6; }
+  th { font-weight: 600; background: #f2f2f2; }
+  .ok { color: #137333; } .bad { color: #b3261e; font-weight: 600; } .dim { color: #777; }
+  .banner { padding: .6rem .8rem; margin-bottom: 1rem; border-radius: 4px; }
+  .banner.fire { background: #fde7e5; } .banner.calm { background: #e6f4ea; }
+  pre { background: #fff; padding: .6rem; overflow: auto; margin: 0; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #161616; color: #e6e6e6; } table, pre { background: #1f1f1f; } th { background: #262626; }
+    th, td { border-color: #333; } .banner.fire { background: #3b1f1d; } .banner.calm { background: #1b3322; }
+  }
+</style>
+</head>
+<body>
+<h1>muken status <span class="dim" id="time"></span></h1>
+<div id="banner" class="banner calm">Loading...</div>
+<div id="host"></div>
+<h2>Containers</h2>
+<table><thead><tr><th>Name</th><th>Role</th><th>State</th><th>Ready</th><th>CPU</th><th>Memory</th><th>Restarts</th></tr></thead><tbody id="rows"></tbody></table>
+<h2>Recent deploys</h2>
+<table><thead><tr><th>Time</th><th>App</th><th>Release</th><th>Image</th><th>Status</th></tr></thead><tbody id="deploys"></tbody></table>
+<h2>Recent errors in logs</h2>
+<pre id="errors"></pre>
+<script>
+function td(tr, text, cls) { const c = document.createElement('td'); c.textContent = text; if (cls) c.className = cls; tr.appendChild(c); }
+function mb(n) { return n ? (n / 1048576).toFixed(0) + ' MB' : '-'; }
+async function load() {
+  let s;
+  try { s = await (await fetch('api/status', {cache: 'no-store'})).json(); } catch (e) { return; }
+  document.getElementById('time').textContent = s.time || '';
+  const b = document.getElementById('banner');
+  const alerts = s.alerts || [];
+  if (s.error) { b.className = 'banner fire'; b.textContent = s.error; }
+  else if (alerts.length) { b.className = 'banner fire'; b.textContent = alerts.join(' | '); }
+  else { b.className = 'banner calm'; b.textContent = 'No active alerts'; }
+  const h = s.host || {};
+  document.getElementById('host').textContent = 'Load ' + (h.load1 || 0).toFixed(2) +
+    ' | Memory free ' + mb(h.mem_available) + ' of ' + mb(h.mem_total) +
+    ' | Disk used ' + ((h.disk_used_ratio || 0) * 100).toFixed(0) + '%';
+  const rows = document.getElementById('rows'); rows.textContent = '';
+  for (const c of (s.containers || [])) {
+    const tr = document.createElement('tr');
+    td(tr, c.name + (c.current ? '' : ' (old)'), c.current ? '' : 'dim');
+    td(tr, c.role); td(tr, c.state, c.state === 'running' ? 'ok' : (c.current ? 'bad' : 'dim'));
+    td(tr, c.role === 'web' ? (c.ready ? 'yes' : 'no') : '-', c.role === 'web' && !c.ready && c.current ? 'bad' : '');
+    td(tr, c.cpu_percent.toFixed(1) + '%'); td(tr, mb(c.mem_used)); td(tr, String(c.restarts));
+    rows.appendChild(tr);
+  }
+  const d = document.getElementById('deploys'); d.textContent = '';
+  for (const e of (s.deploys || [])) {
+    const tr = document.createElement('tr');
+    td(tr, e.Time); td(tr, e.App); td(tr, e.Release); td(tr, e.Image); td(tr, e.Status, e.Status === 'failed' ? 'bad' : '');
+    d.appendChild(tr);
+  }
+  document.getElementById('errors').textContent = (s.errors || []).map(l => l.container + ': ' + l.line).join('\n') || 'None';
+}
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

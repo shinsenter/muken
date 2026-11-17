@@ -1,0 +1,67 @@
+# Deletes finished workflow runs that are older than N days, once a week.
+# Deleting a run also deletes its logs and artifacts. Runs that are still going are never touched.
+#
+#   schedule: every Monday, N = 7
+#   manual:   Actions tab -> Cleanup -> Run workflow. Set "days", and tick "dry_run" to only list.
+#
+# The API returns up to 1,000 runs per search, so a long backlog takes a few weekly runs.
+
+name: Cleanup
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Delete runs older than this many days
+        type: string
+        default: '7'
+      dry_run:
+        description: Only list the runs, delete nothing
+        type: boolean
+        default: false
+
+concurrency:
+  group: cleanup
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DAYS: ${{ inputs.days || '7' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$DAYS" =~ ^[1-9][0-9]*$ ]]; then
+            echo "days must be a whole number, 1 or more. Got '$DAYS'" >&2
+            exit 1
+          fi
+          cutoff="$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Finished runs created before $cutoff (older than $DAYS days)"
+
+          ids="$(gh api --paginate "repos/$REPO/actions/runs" \
+            -f status=completed -f created="<$cutoff" -f per_page=100 \
+            --jq '.workflow_runs[].id')"
+
+          count=0
+          for id in $ids; do
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete run $id"
+            else
+              gh api -X DELETE "repos/$REPO/actions/runs/$id" --silent
+              echo "deleted run $id"
+            fi
+            count=$((count + 1))
+          done
+
+          verb="Deleted"
+          [ "$DRY_RUN" = "true" ] && verb="Would delete"
+          echo "### $verb $count run(s) older than $DAYS days" | tee -a "$GITHUB_STEP_SUMMARY"

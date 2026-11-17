@@ -1,0 +1,126 @@
+# Builds the Docker image (target cli of the Dockerfile).
+#   pull request: build, smoke test and scan. Nothing is pushed.
+#   tag v0.1.0: the same, then push to ghcr.io/shinsenter/muken for amd64 and arm64, and sign with cosign.
+#
+# Tags pushed for v0.1.0: 0.1.0, 0.1 and latest.
+# A tag with a dash (v0.1.0-rc1) gets only its own tag.
+# The scan fails on HIGH or CRITICAL vulnerabilities that already have a fix. The base image can
+# carry some, so a failed scan often means "rebuild when the base image is updated".
+
+name: Image
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'go.mod'
+      - 'go.sum'
+      - '**.go'
+      - '.github/workflows/image.yml'
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build (amd64, kept on this machine)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: cli
+          load: true
+          tags: muken:scan
+
+      - name: Smoke test
+        run: |
+          docker run --rm muken:scan version
+          docker run --rm --entrypoint ssh muken:scan -V
+          docker run --rm --entrypoint ls muken:scan /etc/ssl/certs/ca-certificates.crt
+
+      - name: Trivy
+        run: |
+          {
+            echo "### Trivy, HIGH and CRITICAL with a fix"
+            echo '```'
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/aquasecurity/trivy:latest image \
+              --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress muken:scan
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [build]
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Tags
+        id: tags
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          minor="${version%.*}"
+          image="ghcr.io/${GITHUB_REPOSITORY}"
+          {
+            echo 'list<<EOF'
+            echo "${image}:${version}"
+            if [[ $version != *-* ]]; then
+              echo "${image}:${minor}"
+              echo "${image}:latest"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: cli
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ github.ref_name }}
+          tags: ${{ steps.tags.outputs.list }}
+          push: true
+          provenance: mode=max
+          sbom: true
+
+      - uses: sigstore/cosign-installer@v4.1.3
+
+      - name: Sign
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/${GITHUB_REPOSITORY}@${DIGEST}"

@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a few days before taking a new release, so a bad one is pulled before we use it.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    open-pull-requests-limit: 3
+
+  # Go modules. After a bump, run scripts/third-party-notices.sh and commit THIRD_PARTY_NOTICES.txt.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a few days before taking a new release, so a bad one is pulled before we use it.
+    cooldown:
+      default-days: 7
+    groups:
+      go:
+        patterns: ["*"]
+    open-pull-requests-limit: 3
+
+  # The base images of the Dockerfile
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2

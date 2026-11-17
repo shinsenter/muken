@@ -1,0 +1,88 @@
+# Tests, and a scan for known vulnerabilities.
+#   pull request and push: test and scan.
+#   every Monday: scan again, because a CVE can appear after the merge. A failed run is the report.
+#   called by release.yml before a release is built.
+#
+# The scan fails on a vulnerability that the code calls (govulncheck),
+# and on HIGH or CRITICAL ones that already have a fix (Trivy).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, '0.*']
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          # The newest Go: older ones stop getting security fixes. go.mod keeps the oldest version that can build the code.
+          go-version: stable
+          # No cache: this repository publishes binaries, and a poisoned cache could end up in them.
+          cache: false
+
+      - name: Format
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race ./...
+
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          # The newest Go: older ones stop getting security fixes. go.mod keeps the oldest version that can build the code.
+          go-version: stable
+          cache: false
+
+      - name: Verify the modules
+        run: go mod verify
+
+      # Reports only the vulnerabilities that the code can reach, so it has few false alarms.
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          {
+            echo '### govulncheck'
+            echo '```'
+            "$(go env GOPATH)/bin/govulncheck" ./...
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Looks at every module in go.sum. Only HIGH and CRITICAL with a published fix fail the job.
+      - name: Trivy
+        run: |
+          {
+            echo '### Trivy (HIGH and CRITICAL with a fix)'
+            echo '```'
+            docker run --rm -v "$PWD":/src:ro ghcr.io/aquasecurity/trivy:latest fs \
+              --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+              --exit-code 1 --no-progress /src
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"

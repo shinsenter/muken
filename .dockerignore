@@ -1,0 +1,6 @@
+.git
+.github
+dist
+docs
+*.test
+.DS_Store

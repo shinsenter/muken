@@ -1,0 +1,7 @@
+# Settings for zizmor, the security check of the workflows.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Actions follow a version tag, and Dependabot updates the tags. They are not pinned to a hash.
+        "*": ref-pin

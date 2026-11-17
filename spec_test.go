@@ -110,3 +110,42 @@ func TestCheckSpecFindsProblems(t *testing.T) {
 		}
 	}
 }
+
+// The files that agents load often have a size budget. A file over budget needs a split,
+// not a bigger budget: move detail to a file that is read on demand.
+func TestContextFilesStaySmall(t *testing.T) {
+	budget := map[string]int{
+		"AGENTS.md":           45,
+		"openspec/index.md":   45,
+		"openspec/loop.md":    70,
+		"openspec/AGENTS.md":  115,
+		"openspec/project.md": 115,
+	}
+	specs, _ := filepath.Glob("openspec/specs/*/spec.md")
+	for _, spec := range specs {
+		budget[spec] = 150
+	}
+	for file, max := range budget {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Errorf("%s: %v", file, err)
+			continue
+		}
+		if lines := strings.Count(string(data), "\n"); lines > max {
+			t.Errorf("%s has %d lines, budget %d: move detail to a file that is read on demand", file, lines, max)
+		}
+	}
+}
+
+func TestIndexListsEverySpec(t *testing.T) {
+	index, err := os.ReadFile("openspec/index.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	specs, _ := filepath.Glob("openspec/specs/*/spec.md")
+	for _, spec := range specs {
+		if !strings.Contains(string(index), strings.TrimPrefix(spec, "openspec/")) {
+			t.Errorf("openspec/index.md does not list %s", spec)
+		}
+	}
+}

@@ -31,7 +31,7 @@ The tests never touch a real server, Docker or the network.
 | `internal/catalog/` | The images and apps muken knows (WordPress, Laravel, ...) with their defaults | A config file with a lookup function |
 | `internal/deploy/` | The part that matters: `Provision`, `Plan`, `Deploy`, `Rollback`, `Maintenance` | The service class |
 | `internal/remote/` | Runs a command on the server over SSH. Also a fake one for tests | An interface with two implementations |
-| `internal/provider/` | Creates servers at DigitalOcean, Hetzner and Vultr | An API client per vendor |
+| `internal/provider/` | Creates servers at DigitalOcean, Hetzner, Vultr and AWS | An API client per vendor |
 | `internal/cloudflare/` | DNS records, SSL mode, cache purge | An API client |
 | `internal/secrets/` | Keeps secrets encrypted in the repository (age) | A small vault |
 | `internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys, with its own `.gitignore` | A small helper |

@@ -37,7 +37,7 @@ It was made for the images of [shinsenter/php](https://github.com/shinsenter/php
 
 | You need | Details |
 |---|---|
-| A server | Debian or Ubuntu, reachable over SSH as `root` or as a user with passwordless sudo. Ports 80 and 443 open. muken can create one at DigitalOcean, Hetzner or Vultr |
+| A server | Debian or Ubuntu, reachable over SSH as `root` or as a user with passwordless sudo. Ports 80 and 443 open. muken can create one at DigitalOcean, Hetzner, Vultr or AWS |
 | A domain | An A record that points to the server. With Cloudflare, muken sets it for you |
 | An image | Your app, built `FROM` a shinsenter image and pushed to a registry that the server can pull from. **muken never builds images** |
 | Your machine | The `muken` binary, or the muken Docker image. You do not need Docker, Ansible or Python locally |
@@ -252,6 +252,7 @@ If not, muken can create one:
 
 ```shell
 export DIGITALOCEAN_TOKEN=...        # or HCLOUD_TOKEN for Hetzner, VULTR_API_KEY for Vultr
+# AWS: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_REGION (default us-east-1)
 muken server create
 ```
 
@@ -269,6 +270,8 @@ If one is missing, the error names it, for example `You are missing the required
 
 > [!TIP]
 > Give the token a short expiry and delete it when you are done.
+
+At AWS, muken creates an EC2 instance with the newest Ubuntu 24.04 image from Canonical in the default VPC of the region. It imports your SSH key, and creates a security group named `muken` that opens ports 22, 80 and 443. The IAM user needs EC2 permissions (`AmazonEC2FullAccess` is enough). Only long-lived access keys work, not session tokens. Ubuntu on AWS has no root login, so muken writes `server.user: ubuntu` to `muken.yaml`. The plans are a fixed list of `t3` types, with no price. The server id looks like `us-east-1/i-0123456789abcdef0`, and `server delete` needs it whole.
 
 `muken server create`:
 
@@ -374,7 +377,7 @@ Every command takes `-c <file>` (default `muken.yaml`), `--yes`, `--accept-new` 
 | Command | What it does |
 |---|---|
 | `init` | Create `muken.yaml` by answering questions. `--list` shows the images and apps |
-| `server create\|delete\|regions\|sizes\|key` | Create or remove a server (`--provider digitalocean\|hetzner\|vultr`). `key [name]` creates an SSH key in `.muken/.ssh` next to `muken.yaml` |
+| `server create\|delete\|regions\|sizes\|key` | Create or remove a server (`--provider digitalocean\|hetzner\|vultr\|aws`). `key [name]` creates an SSH key in `.muken/.ssh` next to `muken.yaml` |
 | `up` | First time on a server: prepare it, set DNS (Cloudflare), deploy |
 | `doctor` | Check config, secrets, SSH, Docker, proxy, disk, DNS. Missing Docker or proxy on a new server is a warning |
 | `deploy` | Deploy with no downtime. `--image <ref>`, `--skip-pull`, `--no-migrate`. `--plan` shows what would change and changes nothing. `--keep-maintenance` keeps the maintenance page after the deploy |
@@ -734,7 +737,7 @@ Run by hand on a real server on 2026-11-16 (a DigitalOcean droplet, Ubuntu 24.04
 Not tested:
 
 - Letsencrypt and Cloudflare certificates, and a domain name. The test used an IP address and no TLS.
-- The Hetzner, Vultr and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.
+- The Hetzner, Vultr, AWS and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.
 - Workers and migrations replace the image entrypoint with `sh -c <command>` and run as `www-data`, so the s6 start-up hooks of the image do not run for them. Check your commands once with `muken exec`.
 - `muken agent install` on a real server, and the public status page behind Traefik.
 - The fixes made after that run (skipping the base setup on a second `up`, the spinner and summary output, `exec` without a terminal) are covered by unit tests only.

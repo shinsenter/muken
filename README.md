@@ -7,7 +7,7 @@ muken is one program. You describe your app in a short file. muken prepares the 
 It was made for the [shinsenter/php](https://github.com/shinsenter/php) images, and it works with any app that runs in Docker and answers an HTTP health check. muken does not build your image: you build and push it, and the server pulls it.
 
 > [!WARNING]
-> Version 0.1, in development. The code has unit tests that run without a server, and it was run by hand on one real DigitalOcean server. Certificates, the Hetzner, Vultr and Cloudflare APIs and several other parts were not tested on a real setup, so try it on a test machine first. The guide lists what is tested and what is not.
+> Version 0.1, in development. The code has unit tests that run without a server, and it was run by hand on one real DigitalOcean server. Certificates, the Hetzner, Vultr, AWS and Cloudflare APIs and several other parts were not tested on a real setup, so try it on a test machine first. The guide lists what is tested and what is not.
 
 Guide: [docs/guide.md](docs/guide.md). Site: https://shinsenter.github.io/muken/. For maintainers: [docs/development.md](docs/development.md).
 
@@ -62,7 +62,7 @@ flowchart LR
 - A maintenance page (`maintenance on`) that can be your own HTML file, and a choice to keep it through a deploy or a rollback.
 - Migrations that run before the switch, workers (queues, schedulers), and a database or Redis on the same server.
 - Secrets that stay encrypted in your repository.
-- Servers at DigitalOcean, Hetzner and Vultr, DNS and certificates through Cloudflare.
+- Servers at DigitalOcean, Hetzner, Vultr and AWS, DNS and certificates through Cloudflare.
 - A small monitoring sidecar: a status page, metrics for Prometheus and alerts to Slack or Discord.
 - Kubernetes manifests from the same config, if you outgrow one server.
 - Presets for every image and app of the shinsenter/php project (WordPress, Laravel, Symfony, Drupal, Nextcloud and more).

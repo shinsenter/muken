@@ -39,6 +39,7 @@ The tests never touch a real server, Docker or the network.
 | `legal.go` and the root texts | The license, notice, name policy and third-party licenses, compiled into the binary (`muken version --license`) | `resources/` files read at start |
 | `Dockerfile` | The Docker image `cli` (`docker build --target cli .`) | The Dockerfile of a PHP app |
 | `.github/workflows/` | `ci` (test and scan), `release` (binaries), `image` (Docker image), `cleanup` (deletes old workflow runs every week) | The pipeline files |
+| `openspec/` | The specs of each capability, the changes in progress and the roadmap to 1.0. `AGENTS.md` points here | A requirements folder next to the code |
 | `scripts/` | `third-party-notices.sh` collects the licenses of the dependencies | A build helper |
 
 Each folder is one Go package. A package is a namespace: the files in it share names, and the folder name is the name you use when you call it (`config.Load`, `deploy.New`).

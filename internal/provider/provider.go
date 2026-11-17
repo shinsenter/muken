@@ -47,7 +47,7 @@ type Provider interface {
 	Delete(ctx context.Context, id string) error
 }
 
-var Names = []string{"digitalocean", "hetzner", "vultr", "aws"}
+var Names = []string{"digitalocean", "hetzner", "vultr", "aws", "gcp"}
 
 func New(name string) (Provider, error) {
 	switch name {
@@ -57,6 +57,8 @@ func New(name string) (Provider, error) {
 		return NewHetzner(os.Getenv("HCLOUD_TOKEN")), nil
 	case "aws":
 		return awsFromEnv(), nil
+	case "gcp":
+		return gcpFromEnv(), nil
 	case "vultr":
 		return NewVultr(os.Getenv("VULTR_API_KEY")), nil
 	}

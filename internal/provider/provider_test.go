@@ -221,7 +221,7 @@ func TestVultrSizesAreCheapestFirst(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	for _, n := range []string{"digitalocean", "do", "hetzner", "vultr", "aws"} {
+	for _, n := range []string{"digitalocean", "do", "hetzner", "vultr", "aws", "gcp"} {
 		if _, err := New(n); err != nil {
 			t.Errorf("%s: %v", n, err)
 		}

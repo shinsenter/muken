@@ -37,7 +37,7 @@ It was made for the images of [shinsenter/php](https://github.com/shinsenter/php
 
 | You need | Details |
 |---|---|
-| A server | Debian or Ubuntu, reachable over SSH as `root` or as a user with passwordless sudo. Ports 80 and 443 open. muken can create one at DigitalOcean or Hetzner |
+| A server | Debian or Ubuntu, reachable over SSH as `root` or as a user with passwordless sudo. Ports 80 and 443 open. muken can create one at DigitalOcean, Hetzner or Vultr |
 | A domain | An A record that points to the server. With Cloudflare, muken sets it for you |
 | An image | Your app, built `FROM` a shinsenter image and pushed to a registry that the server can pull from. **muken never builds images** |
 | Your machine | The `muken` binary, or the muken Docker image. You do not need Docker, Ansible or Python locally |
@@ -251,7 +251,7 @@ If you have a server, put its IP in `server.host` and make sure `ssh root@<ip>` 
 If not, muken can create one:
 
 ```shell
-export DIGITALOCEAN_TOKEN=...        # or HCLOUD_TOKEN for Hetzner
+export DIGITALOCEAN_TOKEN=...        # or HCLOUD_TOKEN for Hetzner, VULTR_API_KEY for Vultr
 muken server create
 ```
 
@@ -374,7 +374,7 @@ Every command takes `-c <file>` (default `muken.yaml`), `--yes`, `--accept-new` 
 | Command | What it does |
 |---|---|
 | `init` | Create `muken.yaml` by answering questions. `--list` shows the images and apps |
-| `server create\|delete\|regions\|sizes\|key` | Create or remove a server (`--provider digitalocean\|hetzner`). `key [name]` creates an SSH key in `.muken/.ssh` next to `muken.yaml` |
+| `server create\|delete\|regions\|sizes\|key` | Create or remove a server (`--provider digitalocean\|hetzner\|vultr`). `key [name]` creates an SSH key in `.muken/.ssh` next to `muken.yaml` |
 | `up` | First time on a server: prepare it, set DNS (Cloudflare), deploy |
 | `doctor` | Check config, secrets, SSH, Docker, proxy, disk, DNS. Missing Docker or proxy on a new server is a warning |
 | `deploy` | Deploy with no downtime. `--image <ref>`, `--skip-pull`, `--no-migrate`. `--plan` shows what would change and changes nothing. `--keep-maintenance` keeps the maintenance page after the deploy |
@@ -734,7 +734,7 @@ Run by hand on a real server on 2026-11-16 (a DigitalOcean droplet, Ubuntu 24.04
 Not tested:
 
 - Letsencrypt and Cloudflare certificates, and a domain name. The test used an IP address and no TLS.
-- The Hetzner and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.
+- The Hetzner, Vultr and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.
 - Workers and migrations replace the image entrypoint with `sh -c <command>` and run as `www-data`, so the s6 start-up hooks of the image do not run for them. Check your commands once with `muken exec`.
 - `muken agent install` on a real server, and the public status page behind Traefik.
 - The fixes made after that run (skipping the base setup on a second `up`, the spinner and summary output, `exec` without a terminal) are covered by unit tests only.

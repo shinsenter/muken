@@ -68,7 +68,7 @@ func cmdServer(ctx context.Context, p *ui.Printer, args []string) error {
 	var global commonFlags
 	var flags serverFlags
 	flagSet := newFlags("server", &global)
-	providerName := flagSet.String("provider", "", "digitalocean or hetzner")
+	providerName := flagSet.String("provider", "", "digitalocean, hetzner or vultr")
 	flagSet.StringVar(&flags.region, "region", "", "region or location")
 	flagSet.StringVar(&flags.size, "size", "", "plan")
 	flagSet.StringVar(&flags.name, "name", "", "server name")

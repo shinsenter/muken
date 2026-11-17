@@ -138,8 +138,90 @@ func TestHetznerCreate(t *testing.T) {
 	}
 }
 
+func TestVultrCreate(t *testing.T) {
+	var body map[string]any
+	var polls int
+	key := pubKey(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer tok" {
+			t.Error("missing token")
+		}
+		switch {
+		case r.Method == "GET" && r.URL.Path == "/ssh-keys":
+			io.WriteString(w, `{"ssh_keys":[{"id":"other","ssh_key":"ssh-ed25519 AAAA other"}]}`)
+		case r.Method == "POST" && r.URL.Path == "/ssh-keys":
+			io.WriteString(w, `{"ssh_key":{"id":"key-1"}}`)
+		case r.Method == "POST" && r.URL.Path == "/instances":
+			json.NewDecoder(r.Body).Decode(&body)
+			io.WriteString(w, `{"instance":{"id":"abc"}}`)
+		case r.Method == "GET" && r.URL.Path == "/instances/abc":
+			polls++
+			if polls < 3 {
+				io.WriteString(w, `{"instance":{"status":"pending","power_status":"stopped","main_ip":"0.0.0.0"}}`)
+				return
+			}
+			io.WriteString(w, `{"instance":{"status":"active","power_status":"running","main_ip":"192.0.2.9"}}`)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(500)
+		}
+	}))
+	defer ts.Close()
+	v := NewVultr("tok")
+	v.client.base, v.client.Sleep = ts.URL, func(time.Duration) {}
+	srv, err := v.Create(context.Background(), CreateOptions{Name: "blog", Region: "sgp", Size: "vc2-1c-1gb", PublicKey: key})
+	if err != nil || srv.ID != "abc" || srv.IP != "192.0.2.9" {
+		t.Fatalf("got %+v %v", srv, err)
+	}
+	if body["region"] != "sgp" || body["plan"] != "vc2-1c-1gb" || body["os_id"] != float64(vultrUbuntu2404) {
+		t.Fatalf("request %v", body)
+	}
+	if ids, _ := body["sshkey_id"].([]any); len(ids) != 1 || ids[0] != "key-1" {
+		t.Fatalf("sshkey_id %v", body["sshkey_id"])
+	}
+}
+
+func TestVultrReusesKnownKey(t *testing.T) {
+	key := pubKey(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" || r.URL.Path != "/ssh-keys" {
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{"ssh_keys": []map[string]string{{"id": "known", "ssh_key": key + " old-comment"}}})
+	}))
+	defer ts.Close()
+	v := NewVultr("tok")
+	v.client.base = ts.URL
+	id, err := v.ensureKey(context.Background(), key)
+	if err != nil || id != "known" {
+		t.Fatalf("got %q %v", id, err)
+	}
+}
+
+func TestVultrNeedsToken(t *testing.T) {
+	if _, err := NewVultr("").Regions(context.Background()); err == nil || !strings.Contains(err.Error(), "VULTR_API_KEY") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestVultrSizesAreCheapestFirst(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		io.WriteString(w, `{"plans":[
+		 {"id":"big","vcpu_count":4,"ram":8192,"disk":160,"monthly_cost":48},
+		 {"id":"tiny","vcpu_count":1,"ram":512,"disk":10,"monthly_cost":2.5},
+		 {"id":"small","vcpu_count":1,"ram":1024,"disk":25,"monthly_cost":6}]}`)
+	}))
+	defer ts.Close()
+	v := NewVultr("tok")
+	v.client.base = ts.URL
+	list, err := v.Sizes(context.Background())
+	if err != nil || len(list) != 2 || list[0].ID != "small" || list[1].ID != "big" {
+		t.Fatalf("got %v %v", list, err)
+	}
+}
+
 func TestNew(t *testing.T) {
-	for _, n := range []string{"digitalocean", "do", "hetzner"} {
+	for _, n := range []string{"digitalocean", "do", "hetzner", "vultr"} {
 		if _, err := New(n); err != nil {
 			t.Errorf("%s: %v", n, err)
 		}

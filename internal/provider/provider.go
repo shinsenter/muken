@@ -46,7 +46,7 @@ type Provider interface {
 	Delete(ctx context.Context, id string) error
 }
 
-var Names = []string{"digitalocean", "hetzner"}
+var Names = []string{"digitalocean", "hetzner", "vultr"}
 
 func New(name string) (Provider, error) {
 	switch name {
@@ -54,6 +54,8 @@ func New(name string) (Provider, error) {
 		return NewDigitalOcean(os.Getenv("DIGITALOCEAN_TOKEN")), nil
 	case "hetzner":
 		return NewHetzner(os.Getenv("HCLOUD_TOKEN")), nil
+	case "vultr":
+		return NewVultr(os.Getenv("VULTR_API_KEY")), nil
 	}
 	return nil, ui.Errf("use one of: "+strings.Join(Names, ", "), "unknown provider %q", name)
 }

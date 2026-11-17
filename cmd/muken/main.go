@@ -34,7 +34,7 @@ type command struct {
 
 var commands = map[string]command{
 	"init":        {cmdInit, "Create muken.yaml by answering a few questions", "Start"},
-	"server":      {cmdServer, "Create or delete a server (DigitalOcean, Hetzner), or an SSH key for it", "Start"},
+	"server":      {cmdServer, "Create or delete a server (DigitalOcean, Hetzner, Vultr), or an SSH key for it", "Start"},
 	"up":          {cmdUp, "First time on a server: prepare it, set DNS, deploy", "Start"},
 	"doctor":      {cmdDoctor, "Check config, SSH, Docker, DNS and disk", "Deploy"},
 	"deploy":      {cmdDeploy, "Ship a new version with no downtime, roll back on failure", "Deploy"},
@@ -91,7 +91,7 @@ func run(args []string) int {
 func usage(p *ui.Printer) {
 	first := [][2]string{
 		{"muken init", "Answer a few questions"},
-		{"muken server create", "Optional: get a server at DigitalOcean or Hetzner"},
+		{"muken server create", "Optional: get a server at DigitalOcean, Hetzner or Vultr"},
 		{"muken up", "Prepare the server and deploy"},
 	}
 	flags := [][2]string{

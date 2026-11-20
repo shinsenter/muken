@@ -11,7 +11,7 @@ muken is a Go CLI that deploys a Docker app to one Debian or Ubuntu server over 
 | Run several tasks | `openspec/loop.md` |
 | Need a convention, a decision or a task rule | `openspec/project.md`. Run `grep -n '^## '`, then read one section |
 | Check the 1.0 plan | `openspec/roadmap.md` |
-| Need the shinsenter/php or shinsenter/laravel image behavior | `third_party/shinsenter-php/openspec/specs`, read-only. The hook in `.claude/settings.json` updates it each session |
+| Need the shinsenter/php or shinsenter/laravel image behavior | `openspec/upstream.md` (a digest). The submodule `third_party/shinsenter-php` is read-only, open it only for a missing detail. The hook in `.claude/settings.json` updates it each session |
 
 ## Commands
 

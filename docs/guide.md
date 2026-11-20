@@ -768,7 +768,7 @@ Run by hand on a real server on 2026-11-16 (a DigitalOcean droplet, Ubuntu 24.04
 
 Not tested:
 
-- The web image and the web UI: the Docker build, the s6 service, SSH in the container, and the Laravel and Livewire code. The PHP tests are written and have not been run.
+- The web UI against a real server. On 2026-11-20 the `web` image was built and run in Docker on a Mac with an empty working folder: the pages open and show the missing-config message, the history file is recreated after a delete, SSH key login works, and the 11 PHP tests pass. A deploy, rollback or status from the web, the arm64 image and the image scan have not run.
 
 - Letsencrypt and Cloudflare certificates, and a domain name. The test used an IP address and no TLS.
 - The Hetzner, Vultr, AWS, Google Cloud and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.

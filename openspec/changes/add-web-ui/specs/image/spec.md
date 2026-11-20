@@ -44,7 +44,7 @@ The system SHALL build a target `web` on `shinsenter/laravel` (alpine variant) t
 - **WHEN** the container starts without `SSHD_AUTHORIZED_KEYS`
 - **THEN** sshd runs and nobody can log in, because password login is off
 
-Tests: smoke test in `.github/workflows/image.yml`. Not run yet: needs a Docker build.
+Tests: smoke test in `.github/workflows/image.yml`. By hand on 2026-11-20: the image builds, Nginx, PHP-FPM, sshd and `muken serve` start, key login over SSH works. The workflow itself has not run.
 
 ### Requirement: Build the web assets in the image
 The system SHALL build the Tailwind CSS and JavaScript with Vite in a build stage and ship only the result. The image SHALL load no asset from a CDN.

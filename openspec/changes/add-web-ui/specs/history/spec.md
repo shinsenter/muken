@@ -12,7 +12,7 @@ The system SHALL store history in the SQLite file `MUKEN_HISTORY_DB` (default `/
 - **WHEN** the user runs a deploy from the web
 - **THEN** a row appears with `state` `running`, and becomes `ok` or `failed` at the end
 
-Tests: PHP, `HistoryStoreTest`. Written, not run: no `php` on the machine that wrote it.
+Tests: PHP, `HistoryStoreTest`. Run with `docker build --target web-test`: 11 tests pass.
 
 ### Requirement: The file may be missing
 The system SHALL create the directory and the file, and run the migration, when the file is missing, at boot and again on the first access after a deletion while the app runs. The new history SHALL be empty.
@@ -21,7 +21,7 @@ The system SHALL create the directory and the file, and run the migration, when 
 - **WHEN** the file is deleted and the user opens History
 - **THEN** the page shows an empty list, with no error
 
-Tests: PHP, `HistoryStoreTest`. Written, not run: no `php` on the machine that wrote it.
+Tests: PHP, `HistoryStoreTest`. Run with `docker build --target web-test`: 11 tests pass.
 
 ### Requirement: A bad file is replaced
 The system SHALL rename a file that is not a valid SQLite database to `history.sqlite.bad-<unix time>` and start a new one.
@@ -30,7 +30,7 @@ The system SHALL rename a file that is not a valid SQLite database to `history.s
 - **WHEN** the file holds text that is not SQLite
 - **THEN** it is renamed and the history starts empty
 
-Tests: PHP, `HistoryStoreTest`. Written, not run: no `php` on the machine that wrote it.
+Tests: PHP, `HistoryStoreTest`. Run with `docker build --target web-test`: 11 tests pass.
 
 ### Requirement: A DB error never breaks the app
 The system SHALL catch every database error in the history code, write a warning to the log, and return an empty result. A failed write SHALL NOT stop, fail or hide an operation.
@@ -39,4 +39,4 @@ The system SHALL catch every database error in the history code, write a warning
 - **WHEN** the history write fails during a deploy
 - **THEN** the deploy runs to the end and the page shows its output
 
-Tests: PHP, `HistoryStoreTest`. Written, not run: no `php` on the machine that wrote it.
+Tests: PHP, `HistoryStoreTest`. Run with `docker build --target web-test`: 11 tests pass.

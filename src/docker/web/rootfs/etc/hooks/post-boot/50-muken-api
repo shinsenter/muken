@@ -4,6 +4,15 @@
 # Same pattern as 00-ssh-server in shinsenter/php: add the service once, then enable it.
 has-cmd muken || { debug-echo -e "muken not found, cannot start the API." >&2; exit 1; }
 
+# APP_KEY: init-laravel runs key:generate as the app user, which cannot write .env at that point
+# (it still belongs to root, and the UID may change at boot). Make the key here, as root, once.
+app="${APP_PATH:-/var/www/html}"
+if [ -f "$app/.env" ] && grep -qx 'APP_KEY=' "$app/.env"; then
+    key="base64:$(/usr/local/bin/php -r 'echo base64_encode(random_bytes(32));')"
+    sed -i "s|^APP_KEY=\$|APP_KEY=${key}|" "$app/.env"
+    chown "${APP_USER:-www-data}" "$app/.env" 2>/dev/null || true
+fi
+
 s6_dir="${S6_RUNTIME_BUNDLEDIR:-/etc/s6-overlay/user-bundles.d}"
 if [ ! -d "$s6_dir/muken-api" ] && [ ! -d "$s6_dir.disabled/muken-api" ]; then
     s6-service muken-api longrun '#!/usr/bin/env bash

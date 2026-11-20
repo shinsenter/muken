@@ -4,9 +4,11 @@ namespace App\Livewire;
 
 use App\Services\MukenClient;
 use Livewire\Attributes\Url;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /** muken.yaml and the working folder of muken, read only. */
+#[Layout('components.layouts.app')]
 class ConfigPage extends Component
 {
     #[Url]

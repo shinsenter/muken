@@ -5,9 +5,11 @@ namespace App\Livewire;
 use App\Services\HistoryStore;
 use App\Services\MukenClient;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /** Deploy, rollback, scale, maintenance and up: a change that runs as a job. */
+#[Layout('components.layouts.app')]
 class Operate extends Component
 {
     public const ACTIONS = [

@@ -2,7 +2,7 @@
 
 ARG ALPINE_VERSION=latest
 ARG GO_VERSION=1.27
-# "latest-alpine" is the alpine variant of shinsenter/laravel. Unverified: the tag is not checked on Docker Hub.
+# "latest-alpine" is the alpine variant of shinsenter/laravel (pulled on 2026-11-20).
 ARG LARAVEL_IMAGE=shinsenter/laravel:latest-alpine
 
 # The Go build runs on the machine that builds the image and cross-compiles,
@@ -36,29 +36,30 @@ CMD ["help"]
 
 # The web app: a new Laravel project with Livewire and the files of web/ on top, and the assets built
 # with Vite. The final stage copies only the result, so node stays out of the image.
+# In this image `php`, `composer` and `artisan` are aliases that run in APP_PATH, so the build stages
+# set APP_PATH to the folder they work in. The final stage keeps the default /var/www/html.
 FROM ${LARAVEL_IMAGE} AS web-build
-WORKDIR /build
+ENV APP_PATH=/work
+WORKDIR /work
 RUN apk add --no-cache nodejs npm \
-    && composer create-project laravel/laravel app --no-interaction --prefer-dist \
-    && cd app \
+    && composer create-project laravel/laravel . --no-interaction --prefer-dist \
     && composer require livewire/livewire --no-interaction
-COPY web/ /build/app/
+COPY web/ /work/
 # The default migrations (users, cache, jobs) are not used: the only table is the history.
 # An empty APP_KEY makes init-laravel of the base image generate a key at the first start.
-RUN cd app \
-    && rm -f database/migrations/*.php \
+RUN rm -f database/migrations/*.php \
     && sed -i 's/^APP_KEY=.*/APP_KEY=/' .env \
     && npm install --no-audit --no-fund \
     && npm run build
 
 # Tests of web/. Build this target on its own: `docker build -f src/Dockerfile --target web-test .`
+# The key is empty in web-build on purpose, so the tests make their own.
 FROM web-build AS web-test
-RUN cd app && php artisan test
+RUN php artisan key:generate --force && php artisan test
 
 # What the image ships: no tests, no node_modules, no dev packages.
 FROM web-build AS web-app
-RUN cd app \
-    && rm -rf tests node_modules \
+RUN rm -rf tests node_modules \
     && composer install --no-dev --optimize-autoloader --no-interaction
 
 # The web image: the site and the muken CLI in one image. SSH is on, and it needs SSHD_AUTHORIZED_KEYS.
@@ -70,7 +71,7 @@ LABEL org.opencontainers.image.source="https://github.com/shinsenter/muken" \
 RUN apk upgrade --no-cache && apk add --no-cache ca-certificates openssh-client
 COPY --from=build /out/muken /usr/local/bin/muken
 COPY LICENSE NOTICE TRADEMARK.md THIRD_PARTY_NOTICES.txt /licenses/muken/
-COPY --from=web-app /build/app/ /var/www/html/
+COPY --from=web-app --chown=www-data:www-data /work/ /var/www/html/
 COPY src/docker/web/rootfs/ /
 # Sessions, cache and queue use files, so the history is the only use of a database.
 # LARAVEL_AUTO_MIGRATION is off because the app prepares its own SQLite file (see HistoryStore).

@@ -3,8 +3,10 @@
 namespace App\Livewire;
 
 use App\Services\MukenClient;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('components.layouts.app')]
 class Doctor extends Component
 {
     public string $output = '';

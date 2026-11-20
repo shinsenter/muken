@@ -32,13 +32,17 @@ The system SHALL push `web` for `linux/amd64` and `linux/arm64` on a `v*` tag wi
 Tests: publish job in `.github/workflows/image.yml`. Not run yet.
 
 ### Requirement: A web image
-The system SHALL build a target `web` on `shinsenter/laravel` (alpine variant) that holds `/usr/local/bin/muken`, `openssh-client`, `ca-certificates` and the Laravel app of `web/` in `/var/www/html`. It SHALL set `ENABLE_SSHD=1`. It SHALL NOT contain the Docker CLI or a Docker daemon. It SHALL NOT publish a port by itself.
+The system SHALL build a target `web` on `shinsenter/laravel` (alpine variant) that holds `/usr/local/bin/muken`, `openssh-client`, `openssh-server`, `ca-certificates` and the finished Laravel app of `web/` in `/source/`. The base image copies `/source/` into `/var/www/html` at the first start, when that folder is empty. The image SHALL NOT need the network to start, and SHALL NOT run `composer` or `npm` at start. It SHALL set `ENABLE_SSHD=1`. It SHALL NOT contain the Docker CLI or a Docker daemon. It SHALL NOT publish a port by itself.
 
 #### Scenario: The image serves the site and runs muken
 - **WHEN** the container starts with `-v "$PWD":/work`
 - **THEN** Nginx and PHP-FPM serve the app on port 80
 - **AND** `muken serve` listens on `127.0.0.1:7600`
 - **AND** `docker exec <container> muken version` prints the version
+
+#### Scenario: A start with no network
+- **WHEN** the container starts with `--network none`
+- **THEN** the pages, `muken serve` and sshd work
 
 #### Scenario: SSH is on and needs a key
 - **WHEN** the container starts without `SSHD_AUTHORIZED_KEYS`

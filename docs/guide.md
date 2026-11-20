@@ -741,6 +741,8 @@ Open http://127.0.0.1:8080. What the example does:
 - `SSHD_AUTHORIZED_KEYS` is for SSH into the container, which is on by default. With no key set, sshd runs and nobody can log in. Do not publish port 22 unless you need it.
 - Run the CLI in the same container: `docker exec -w /work muken muken status`.
 
+The app is inside the image in `/source`, and the image copies it to `/var/www/html` at the first start. It needs no network to start. The footer of each page shows the muken version and the copyright.
+
 The page keeps a history of what you did in `.muken/history.sqlite`. It is the only thing the site stores. Delete the file and the next page load makes a new, empty one. A problem with that file never stops a deploy.
 
 The site talks to `muken serve`, a JSON API on `127.0.0.1:7600` inside the container. It has no login, so `muken serve` refuses an address that is not loopback.

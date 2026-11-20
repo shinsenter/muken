@@ -47,6 +47,15 @@ The system SHALL read settings from the fixed file `/work/muken.yaml`, through t
 
 Tests: PHP, `PagesTest::test_every_page_opens_without_the_database`. Run with `docker build --target web-test`: 11 tests pass.
 
+### Requirement: Footer
+The system SHALL show on every page a footer with the version of muken (from `GET /v1/version`) and `Copyright © 2026 Mai Nhut Tan`, `Apache License 2.0`. When the API does not answer, the footer SHALL still show without the version.
+
+#### Scenario: The version
+- **WHEN** a page opens and the API answers `v9.9.9`
+- **THEN** the footer shows `v9.9.9` and the copyright
+
+Tests: PHP, `PagesTest::test_the_status_page_needs_no_login`, `PagesTest::test_a_stopped_api_shows_a_message_and_keeps_the_menu`. Run with `docker build --target web-test`: 11 tests pass.
+
 ### Requirement: The API is down
 The system SHALL show a page that says muken serve does not answer, with the command to check it, and not a server error.
 

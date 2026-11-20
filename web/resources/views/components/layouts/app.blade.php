@@ -13,7 +13,7 @@
             @foreach ([
                 '/' => 'Status', '/deploy' => 'Deploy', '/rollback' => 'Rollback', '/scale' => 'Scale',
                 '/maintenance' => 'Maintenance', '/up' => 'Set up', '/doctor' => 'Doctor', '/logs' => 'Logs',
-                '/config' => 'Config', '/history' => 'History',
+                '/config' => 'Config', '/history' => 'History', '/setup' => 'Setup',
             ] as $href => $label)
                 <a href="{{ $href }}" wire:navigate
                    class="{{ request()->is(ltrim($href, '/') ?: '/') ? 'font-semibold text-lime-700' : 'text-slate-600 hover:text-slate-900' }}">{{ $label }}</a>

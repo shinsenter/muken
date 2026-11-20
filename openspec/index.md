@@ -10,6 +10,8 @@ Pick the capability, open its spec. Do not search the tree.
 | Keys: age key, SSH key | `specs/keys/spec.md` | `src/internal/secrets/`, `src/internal/project/`, `src/cmd/muken/cmd_key.go` | the same folders, `src/cmd/muken/cmd_key_test.go` |
 | Image | `specs/image/spec.md` | `src/Dockerfile`, `.github/workflows/image.yml` | smoke test in `image.yml` |
 
+In progress (`changes/add-web-ui`, not in `specs/` until archived): API, Web, History. Image changes with it.
+
 No spec yet. Read the code and one section of the guide.
 
 | Area | Code | Guide section |

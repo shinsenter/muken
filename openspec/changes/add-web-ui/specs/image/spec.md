@@ -22,6 +22,15 @@ Tests: none yet
 
 ## ADDED Requirements
 
+### Requirement: Tags of the two images
+The system SHALL push `web` for `linux/amd64` and `linux/arm64` on a `v*` tag with `<version>`, `<minor>` and `latest`, and `cli` with `<version>-cli`, `<minor>-cli` and `cli`. A tag with a dash gets only its own tag (`<version>` or `<version>-cli`). It SHALL sign both with cosign.
+
+#### Scenario: A release tag
+- **WHEN** the tag `v0.1.0` is pushed
+- **THEN** `web` gets `0.1.0`, `0.1`, `latest` and `cli` gets `0.1.0-cli`, `0.1-cli`, `cli`
+
+Tests: publish job in `.github/workflows/image.yml`. Not run yet.
+
 ### Requirement: A web image
 The system SHALL build a target `web` on `shinsenter/laravel` (alpine variant) that holds `/usr/local/bin/muken`, `openssh-client`, `ca-certificates` and the Laravel app of `web/` in `/var/www/html`. It SHALL set `ENABLE_SSHD=1`. It SHALL NOT contain the Docker CLI or a Docker daemon. It SHALL NOT publish a port by itself.
 

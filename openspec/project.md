@@ -14,6 +14,7 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 
 - Go. The version is in `src/go.mod`.
 - Four dependencies: SSH (`x/crypto`), YAML, age and `golang.org/x/term` (raw keyboard mode and terminal width for the prompts in `src/internal/ui`). A new one needs a reason in the change proposal.
+- The web UI is PHP (Laravel, Livewire, Tailwind) in `web/`. It runs only in the `web` image and adds no Go dependency. `muken serve` uses `net/http` of the standard library.
 - muken runs on the user's machine or in the Docker image. It acts on the server over SSH, with `docker` commands.
 - Server: Debian or Ubuntu. Proxy: Traefik. One server per app.
 - CI: GitHub Actions. `ci` tests and scans, `release` builds binaries on a `v*` tag, `image` builds the Docker image on a `v*` tag, `cleanup` deletes finished workflow runs older than N days (default 7) every Monday.
@@ -32,10 +33,13 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 | `src/internal/secrets/` | Encrypted secrets (age) |
 | `src/internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys |
 | `src/internal/agent/` | The monitoring sidecar |
+| `src/internal/api/` | The JSON API of `muken serve`, for the web UI |
+| `web/` | The web UI overlay: Laravel, Livewire, Tailwind. See `openspec/upstream.md` for the base image |
+| `third_party/shinsenter-php/` | Read only. Context for the images. Updated at session start |
 | `src/internal/k8s/`, `src/internal/ci/`, `src/internal/ui/` | Manifests, the CI workflow file, console output |
 | `src/legal/`, `LICENSE`, `NOTICE`, `TRADEMARK.md`, `THIRD_PARTY_NOTICES.txt` | Legal texts, compiled into the binary. The root files are the source, `make sync-legal` copies them to `src/legal/` |
 | `src/scripts/third-party-notices.sh` | Writes `THIRD_PARTY_NOTICES.txt` |
-| `src/Dockerfile` | The image (build from the root: `docker build -f src/Dockerfile --target cli .`): target `cli`, on `alpine` with `openssh-client` and `ca-certificates` |
+| `src/Dockerfile` | The images: `cli` and `web` (build from the root: `docker build -f src/Dockerfile --target web .`). `cli` is on `alpine` with `openssh-client` and `ca-certificates`. `web` is on `shinsenter/laravel`: target `cli`, on `alpine` with `openssh-client` and `ca-certificates` |
 | `.github/workflows/` | `ci`, `release`, `image`, `cleanup` |
 | `openspec/` | Specs, changes, roadmap |
 
@@ -88,7 +92,11 @@ One server per app. Debian and Ubuntu servers only. No load balancer over severa
 | Keys live in `.muken/` next to `muken.yaml`: `.muken/age.key` and `.muken/.ssh/`. muken still reads `~/.config/muken/age.key` when a project has no key | One context per project or customer. `-v "$PWD":/work` carries the keys into Docker |
 | `secrets init` and `server key` never overwrite a key. `secrets init` also stops when a new key would hide the key that an existing secrets file needs | An overwritten key makes the secrets unreadable |
 | `deploy` and `rollback` turn maintenance off after the switch. `--keep-maintenance` keeps the page. `up` and `scale` always turn it off. `status` shows it | The user decides what visitors see. Hidden state surprises people |
-| The image has no Docker CLI and no `dind` target. It builds on `alpine:latest` with `apk upgrade` | muken runs docker on the server over SSH. A small image with the newest base has fewer CVEs |
+| Neither image has a Docker CLI or a `dind` target. `cli` builds on `alpine:latest` with `apk upgrade` | muken runs docker on the server over SSH. A small image with the newest base has fewer CVEs |
+| `latest` is the `web` image, on `shinsenter/laravel` with SSH on. The small image is `:cli` | The maintainer wants one image for the CLI and the site. Anyone who runs `docker run ghcr.io/shinsenter/muken deploy` must use `:cli` now |
+| The web has no login. The API has no login and refuses a non-loopback address. A change asks for a second click | A login is not wanted. The risk is in the guide, next to the example |
+| Only the history is in SQLite. Config is the file `muken.yaml`. Session, cache and queue use files | A missing SQLite file must never break the app |
+| The specs of this repo cache the facts of shinsenter/php in `openspec/upstream.md` | A session reads one small file, and the hook says when to refresh it |
 | `up` warns before it restarts Docker or replaces the proxy | The guide promises no gap |
 | `doctor` only warns when Docker or the proxy is missing on a server that `up` never set up | The guide says to run `doctor` before the first `up` |
 | Tests do not read the machine's `~/.ssh` or environment | The CI runner has none, and two tests failed there |

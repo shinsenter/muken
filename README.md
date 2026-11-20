@@ -70,7 +70,7 @@ flowchart LR
 ## Install
 
 - The binary: download the file for your system from the [Releases page](https://github.com/shinsenter/muken/releases), check its checksum and put it on your `PATH`.
-- The Docker image, if you would rather not install anything: `docker run --rm ghcr.io/shinsenter/muken help`.
+- The Docker image, if you would rather not install anything: `docker run --rm ghcr.io/shinsenter/muken:cli help`. The `latest` image also runs a [web UI](docs/guide.md#web-ui).
 
 Release files are signed, and each release is scanned for known vulnerabilities before it is published. The guide shows how to check the signature: [Install](docs/guide.md#install).
 

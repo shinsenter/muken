@@ -38,12 +38,15 @@ The tests never touch a real server, Docker or the network.
 | `src/internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys, with its own `.gitignore` | A small helper |
 | `src/internal/agent/` | The monitoring sidecar: reads Docker, shows a page, sends alerts | A separate small app |
 | `src/internal/k8s/`, `src/internal/ci/` | Print Kubernetes manifests and a GitHub Actions file | Template renderers |
+| `src/internal/api/` | The JSON API of `muken serve`: read endpoints, change jobs, read-only file access. It knows no muken logic: a `Backend` runs the commands | A thin HTTP layer over a service class |
+| `web/` | The web UI: Laravel, Livewire and Tailwind files that go over a new Laravel project when the image is built | The `app/` of the PHP side |
 | `src/internal/ui/` | Prints progress, sections and rows, framed prompts with arrow keys, formats errors with a hint. The colors are in `theme.go` | A console helper |
 | `src/legal/` and the root texts | The license, notice, name policy and third-party licenses, compiled into the binary (`muken version --license`) | `resources/` files read at start |
-| `src/Dockerfile` | The Docker image `cli` (`docker build -f src/Dockerfile --target cli .`) | The Dockerfile of a PHP app |
+| `src/Dockerfile` | The Docker images: `cli` and `web` (`docker build -f src/Dockerfile --target web .`). `--target web-test` runs the PHP tests | The Dockerfile of a PHP app |
 | `.github/workflows/` | `ci` (test and scan), `release` (binaries), `image` (Docker image), `cleanup` (deletes old workflow runs every week) | The pipeline files |
 | `openspec/` | The specs of each capability, the changes in progress and the roadmap to 1.0. `AGENTS.md` points here | A requirements folder next to the code |
-| `src/scripts/` | `third-party-notices.sh` collects the licenses of the dependencies | A build helper |
+| `src/scripts/` | `third-party-notices.sh` collects the licenses of the dependencies. `sync-upstream.sh` updates the shinsenter/php submodule at session start | A build helper |
+| `third_party/shinsenter-php/` | The shinsenter/php repository, read only. `openspec/upstream.md` is the digest to read first | A vendored dependency |
 
 Each folder is one Go package. A package is a namespace: the files in it share names, and the folder name is the name you use when you call it (`config.Load`, `deploy.New`).
 

@@ -8,6 +8,9 @@ The base image starts s6. A post-boot hook enables a service `muken-api` (`muken
 - One process can hold the deploy lock and refuse a second run (`409`). Two `exec` calls cannot see each other.
 - The API is testable without PHP, with `remote.Fake`.
 
+## The web is an overlay
+`web/` holds only the files that differ from a new Laravel project. The image build runs `composer create-project laravel/laravel`, adds Livewire, copies `web/` on top, deletes the default migrations and builds the assets. This keeps the repo small and the framework current. Cost: the app cannot run from the repo alone. `--target web-test` runs the PHP tests.
+
 ## Jobs
 A change (`deploy`, `rollback`, `scale`, `maintenance`, `up`) starts a job and returns `202` with `job_id` at once. Output is lines with a number. The web polls `GET /v1/jobs/{id}?after=<n>` every second (Livewire `wire:poll`). Server-sent events are in the API too, for other clients. Jobs live in memory, the last 50. The durable record is the history table.
 

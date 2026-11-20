@@ -97,17 +97,18 @@ Use the image if you would rather not install anything. It has muken and an SSH 
 
 | Tag | Base | Use it for |
 |---|---|---|
-| `0.1.0`, `0.1`, `latest` | the official `alpine` image, newest at build time | muken only. Starts at once. No Docker CLI |
+| `0.1.0-cli`, `0.1-cli`, `cli` | the official `alpine` image, newest at build time | muken only. Starts at once. No Docker CLI |
+| `0.1.0`, `0.1`, `latest` | the alpine variant of `shinsenter/laravel` | muken and the [web UI](#web-ui). SSH is on |
 
 ```shell
 docker run --rm -it \
     -v "$PWD":/work \
     -v ~/.ssh:/root/.ssh \
     -e CLOUDFLARE_API_TOKEN \
-    ghcr.io/shinsenter/muken deploy
+    ghcr.io/shinsenter/muken:cli deploy
 ```
 
-The image has `muken` as its entry point, so what you write after the image name is the muken command.
+The `cli` image has `muken` as its entry point, so what you write after the image name is the muken command. The `latest` image starts the web UI instead: see [Web UI](#web-ui).
 
 In each `-v A:B`, `A` is a path on your machine and `B` is where it appears inside the container. What the example gives the container:
 
@@ -159,7 +160,7 @@ Then set `ssh_key: .muken/.ssh/id_ed25519` under `server:` and mount only that f
 docker run --rm -it \
     -v "$PWD":/work \
     -v "$PWD/.muken/.ssh":/root/.ssh \
-    ghcr.io/shinsenter/muken deploy
+    ghcr.io/shinsenter/muken:cli deploy
 ```
 
 Good to know:
@@ -182,7 +183,7 @@ Example for GitHub Actions, with the key in the secret `DEPLOY_KEY` and one `kno
 mkdir -m 700 ssh
 printf '%s\n' "$DEPLOY_KEY" > ssh/id_ed25519 && chmod 600 ssh/id_ed25519
 printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ssh/known_hosts
-docker run --rm -v "$PWD":/work -v "$PWD/ssh":/root/.ssh ghcr.io/shinsenter/muken deploy
+docker run --rm -v "$PWD":/work -v "$PWD/ssh":/root/.ssh ghcr.io/shinsenter/muken:cli deploy
 ```
 
 ### Check the download
@@ -717,6 +718,33 @@ It is a starting point built from the same `muken.yaml`. It does not deploy, cre
 Cloud Run and other platforms are not supported yet.
 
 
+## Web UI
+
+The `latest` image runs a site next to the CLI, so you can see the status, deploy, roll back, scale, switch maintenance, run `doctor` and read logs from a browser. The site has no login.
+
+> [!WARNING]
+> Anyone who can open the page can deploy to your server and read its logs. Do not publish the port to the internet. Bind it to your own machine, or put it behind a VPN or a proxy that asks for a login.
+
+```shell
+docker run -d --name muken \
+    -p 127.0.0.1:8080:80 \
+    -v "$PWD":/work \
+    -e APP_UID="$(id -u)" -e APP_GID="$(id -g)" \
+    -e SSHD_AUTHORIZED_KEYS="$(cat ~/.ssh/id_ed25519.pub)" \
+    ghcr.io/shinsenter/muken
+```
+
+Open http://127.0.0.1:8080. What the example does:
+
+- `-v "$PWD":/work` is the working folder of muken: `muken.yaml`, `.muken/` and the files next to them. The web reads them, and never writes `muken.yaml`.
+- `APP_UID` and `APP_GID` make the app run as you, so it can read the keys in `.muken/`. Without them the files may be unreadable.
+- `SSHD_AUTHORIZED_KEYS` is for SSH into the container, which is on by default. With no key set, sshd runs and nobody can log in. Do not publish port 22 unless you need it.
+- Run the CLI in the same container: `docker exec -w /work muken muken status`.
+
+The page keeps a history of what you did in `.muken/history.sqlite`. It is the only thing the site stores. Delete the file and the next page load makes a new, empty one. A problem with that file never stops a deploy.
+
+The site talks to `muken serve`, a JSON API on `127.0.0.1:7600` inside the container. It has no login, so `muken serve` refuses an address that is not loopback.
+
 ## What is tested and what is not
 
 Tested by `go test ./...` (Go unit tests, no network and no Docker):
@@ -725,6 +753,7 @@ Tested by `go test ./...` (Go unit tests, no network and no Docker):
 - The deploy, rollback, maintenance and server setup command sequences against a fake server: order of steps, cleanup after a failed health check, migration or smoke check, lock handling, pruning.
 - Cloudflare and provider clients against local test servers.
 - Secrets encryption, the agent (collector, alerts, metrics, login), the Kubernetes output.
+- The API of `muken serve` (jobs, one change at a time, file access limits, hidden secrets), against a fake backend.
 
 Run by hand on a real server on 2026-11-16 (a DigitalOcean droplet, Ubuntu 24.04, `sgp1`, 1 vCPU and 2 GB), with a binary built from branch `0.1` before the fixes of the same day:
 
@@ -738,6 +767,8 @@ Run by hand on a real server on 2026-11-16 (a DigitalOcean droplet, Ubuntu 24.04
 > These parts were not tested on a real setup. Treat the first run with care.
 
 Not tested:
+
+- The web image and the web UI: the Docker build, the s6 service, SSH in the container, and the Laravel and Livewire code. The PHP tests are written and have not been run.
 
 - Letsencrypt and Cloudflare certificates, and a domain name. The test used an IP address and no TLS.
 - The Hetzner, Vultr, AWS, Google Cloud and Cloudflare APIs. The clients follow their public documentation and pass against mocks only.

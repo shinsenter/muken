@@ -28,5 +28,7 @@ Checked in the submodule at the commit above. "Unverified" means the text does n
 | Migration | `LARAVEL_AUTO_MIGRATION` defaults to `1`: `artisan migrate` at boot. `LARAVEL_AUTO_MIGRATION_OPTIONS` adds flags. Whether it creates a missing SQLite file is Unverified |
 | Switches | `LARAVEL_ENABLE_SCHEDULER` default `1`. `LARAVEL_ENABLE_QUEUE_WORKER`, `_HORIZON`, `_PULSE`, `_REVERB` default `0`. Each has `..._OPTIONS` |
 | Boot | Scripts in `/etc/hooks/post-boot/`. `DISABLE_AUTORUN_SCRIPTS=1` turns them all off. `DEBUG=1` prints which hooks run. Services run under s6 (`s6-service <name> longrun`) |
+| Hooks | Folders under `/etc/hooks/`: `post-boot`, `application`, `onready`, `onlive`, `cleanup`. The Laravel image has `application/init-laravel`: when `.env` has an empty `APP_KEY=` it runs `artisan key:generate`, when it has `DB_CONNECTION=sqlite` it touches `database/database.sqlite`, then `artisan migrate --force` if `LARAVEL_AUTO_MIGRATION` is on, then `storage:link`. Helpers: `artisan`, `web-do` (run as the app user), `s6-service <name> longrun\|enable\|disable`, `is-true`, `has-cmd`, `has-s6`, `debug-echo` |
+| Tag name | The upstream Dockerfile builds `${BUILD_FROM_IMAGE}:${BUILD_TAG_PREFIX}php${PHP_VERSION}${PHP_VARIANT}`. The README shows `shinsenter/laravel:latest` |
 | Other | `TZ`, `PHP_*` (php.ini, list with `php-envvars`), `ENABLE_CRONTAB` |
 | Rules for edits there | No `docker build` without asking. Specs say "Unverified" when untested |

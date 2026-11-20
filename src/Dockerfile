@@ -58,9 +58,12 @@ FROM web-build AS web-test
 RUN php artisan key:generate --force && php artisan test
 
 # What the image ships: no tests, no node_modules, no dev packages.
+# composer.json and package.json go too: with them the base image runs `composer update` and
+# `npm install` at the first start, which needs the network and changes the packages we tested.
 FROM web-build AS web-app
-RUN rm -rf tests node_modules \
-    && composer install --no-dev --optimize-autoloader --no-interaction
+RUN rm -rf tests node_modules AGENTS.md CLAUDE.md README.md phpunit.xml \
+    && composer install --no-dev --optimize-autoloader --no-interaction \
+    && rm -f composer.json composer.lock package.json package-lock.json
 
 # The web image: the site and the muken CLI in one image. SSH is on, and it needs SSHD_AUTHORIZED_KEYS.
 # Docker needs no daemon here, because muken runs every docker command on the server over SSH.
@@ -68,14 +71,22 @@ FROM ${LARAVEL_IMAGE} AS web
 LABEL org.opencontainers.image.source="https://github.com/shinsenter/muken" \
       org.opencontainers.image.description="muken: the CLI and a web UI to put your Docker app on a server you own" \
       org.opencontainers.image.licenses="Apache-2.0"
-RUN apk upgrade --no-cache && apk add --no-cache ca-certificates openssh-client
+# openssh-server is here so that SSH starts with no network: 00-ssh-server of the base image would
+# otherwise install it at the first start.
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates openssh-client openssh-server
 COPY --from=build /out/muken /usr/local/bin/muken
 COPY LICENSE NOTICE TRADEMARK.md THIRD_PARTY_NOTICES.txt /licenses/muken/
-COPY --from=web-app --chown=www-data:www-data /work/ /var/www/html/
+# The app goes to /source/, not to /var/www/html. At the first start, when the app folder is empty,
+# the base image copies /source/ into it (hook bootstrap/10-create-project). A mounted app folder
+# that already has files is left alone. The copy never overwrites (cp -n), so /source/ holds the whole
+# app and DISABLE_AUTORUN_CREATING_PROJECT=1 stops the base from making a Laravel project first: that
+# project would win over our routes/web.php. (INITIAL_PROJECT="" does not work: the default comes back.)
+COPY --from=web-app --chown=www-data:www-data /work/ /source/
 COPY src/docker/web/rootfs/ /
 # Sessions, cache and queue use files, so the history is the only use of a database.
 # LARAVEL_AUTO_MIGRATION is off because the app prepares its own SQLite file (see HistoryStore).
-ENV ENABLE_SSHD=1 \
+ENV DISABLE_AUTORUN_CREATING_PROJECT=1 \
+    ENABLE_SSHD=1 \
     APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \

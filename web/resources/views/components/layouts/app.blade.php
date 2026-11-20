@@ -23,5 +23,9 @@
     <main class="mx-auto max-w-5xl px-4 py-6">
         {{ $slot }}
     </main>
+    <footer class="mx-auto max-w-5xl border-t border-slate-200 px-4 py-4 text-xs text-slate-500">
+        <a href="https://github.com/shinsenter/muken" class="hover:underline">muken</a>{{ $mukenVersion ? ' '.$mukenVersion : '' }}
+        &middot; Copyright &copy; 2026 Mai Nhut Tan &middot; Apache License 2.0
+    </footer>
 </body>
 </html>

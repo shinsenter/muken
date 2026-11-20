@@ -58,7 +58,7 @@ jobs:
             docker run --rm muken:scan version
           else
             docker run --rm --entrypoint muken muken:scan version
-            docker run --rm --entrypoint test muken:scan -f /var/www/html/public/build/manifest.json
+            docker run --rm --entrypoint test muken:scan -f /source/public/build/manifest.json
             docker run --rm --entrypoint test muken:scan -x /etc/hooks/post-boot/50-muken-api
             docker run --rm --entrypoint sh muken:scan -c 'echo "ENABLE_SSHD=$ENABLE_SSHD" | grep -x ENABLE_SSHD=1'
           fi

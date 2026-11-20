@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -20,6 +21,22 @@ class MukenClient
     public function post(string $path, array $body = []): array
     {
         return $this->send('post', $path, $body);
+    }
+
+    /** The version of muken serve, or null. Cached for a minute, and a failure is never cached. */
+    public function version(): ?string
+    {
+        $cached = Cache::get('muken.version');
+        if ($cached !== null) {
+            return $cached;
+        }
+        $r = $this->get('version');
+        $version = $r['ok'] ? ($r['data']['version'] ?? null) : null;
+        if ($version !== null) {
+            Cache::put('muken.version', $version, 60);
+        }
+
+        return $version;
     }
 
     private function send(string $method, string $path, array $payload): array

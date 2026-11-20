@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Runs `muken serve` as an s6 service next to Nginx and PHP-FPM, as the app user.
+# The API has no login and listens on loopback only. Nginx never proxies to it.
+# Same pattern as 00-ssh-server in shinsenter/php: add the service once, then enable it.
+has-cmd muken || { debug-echo -e "muken not found, cannot start the API." >&2; exit 1; }
+
+s6_dir="${S6_RUNTIME_BUNDLEDIR:-/etc/s6-overlay/user-bundles.d}"
+if [ ! -d "$s6_dir/muken-api" ] && [ ! -d "$s6_dir.disabled/muken-api" ]; then
+    s6-service muken-api longrun '#!/usr/bin/env bash
+exec 2>&1
+cd "${MUKEN_WORKDIR:-/work}" || exit 1
+exec web-do muken serve
+'
+fi
+
+mkdir -p "${MUKEN_WORKDIR:-/work}"
+has-s6 && s6-service muken-api enable

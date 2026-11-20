@@ -1,8 +1,10 @@
-# Builds the Docker image (target cli of the Dockerfile).
+# Builds the Docker images (targets web and cli of src/Dockerfile).
+#   web: the muken CLI and the web UI, on shinsenter/laravel. It gets the main tags.
+#   cli: the small image, alpine and muken. Its tags end with -cli.
 #   pull request: build, smoke test and scan. Nothing is pushed.
 #   tag v0.1.0: the same, then push to ghcr.io/shinsenter/muken for amd64 and arm64, and sign with cosign.
 #
-# Tags pushed for v0.1.0: 0.1.0, 0.1 and latest.
+# Tags pushed for v0.1.0: web 0.1.0, 0.1 and latest. cli 0.1.0-cli, 0.1-cli and cli.
 # A tag with a dash (v0.1.0-rc1) gets only its own tag.
 # The scan fails on HIGH or CRITICAL vulnerabilities that already have a fix. The base image can
 # carry some, so a failed scan often means "rebuild when the base image is updated".
@@ -30,6 +32,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [web, cli]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -42,13 +48,20 @@ jobs:
         with:
           context: .
           file: src/Dockerfile
-          target: cli
+          target: ${{ matrix.target }}
           load: true
           tags: muken:scan
 
       - name: Smoke test
         run: |
-          docker run --rm muken:scan version
+          if [ "${{ matrix.target }}" = cli ]; then
+            docker run --rm muken:scan version
+          else
+            docker run --rm --entrypoint muken muken:scan version
+            docker run --rm --entrypoint test muken:scan -f /var/www/html/public/build/manifest.json
+            docker run --rm --entrypoint test muken:scan -x /etc/hooks/post-boot/50-muken-api
+            docker run --rm --entrypoint sh muken:scan -c 'echo "ENABLE_SSHD=$ENABLE_SSHD" | grep -x ENABLE_SSHD=1'
+          fi
           docker run --rm --entrypoint ssh muken:scan -V
           docker run --rm --entrypoint ls muken:scan /etc/ssl/certs/ca-certificates.crt
 
@@ -66,6 +79,9 @@ jobs:
     needs: [build]
     if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [web, cli]
     permissions:
       contents: read
       packages: write
@@ -89,16 +105,19 @@ jobs:
         id: tags
         env:
           TAG: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
         run: |
           version="${TAG#v}"
           minor="${version%.*}"
           image="ghcr.io/${GITHUB_REPOSITORY}"
+          suffix=""; latest="latest"
+          if [[ $TARGET == cli ]]; then suffix="-cli"; latest="cli"; fi
           {
             echo 'list<<EOF'
-            echo "${image}:${version}"
+            echo "${image}:${version}${suffix}"
             if [[ $version != *-* ]]; then
-              echo "${image}:${minor}"
-              echo "${image}:latest"
+              echo "${image}:${minor}${suffix}"
+              echo "${image}:${latest}"
             fi
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
@@ -109,7 +128,7 @@ jobs:
         with:
           context: .
           file: src/Dockerfile
-          target: cli
+          target: ${{ matrix.target }}
           platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ github.ref_name }}
           tags: ${{ steps.tags.outputs.list }}

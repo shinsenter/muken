@@ -2,6 +2,8 @@
 
 ARG ALPINE_VERSION=latest
 ARG GO_VERSION=1.27
+# "latest-alpine" is the alpine variant of shinsenter/laravel. Unverified: the tag is not checked on Docker Hub.
+ARG LARAVEL_IMAGE=shinsenter/laravel:latest-alpine
 
 # The Go build runs on the machine that builds the image and cross-compiles,
 # so an arm64 image needs no emulation for this step.
@@ -31,3 +33,57 @@ COPY LICENSE NOTICE TRADEMARK.md THIRD_PARTY_NOTICES.txt /licenses/muken/
 WORKDIR /work
 ENTRYPOINT ["muken"]
 CMD ["help"]
+
+# The web app: a new Laravel project with Livewire and the files of web/ on top, and the assets built
+# with Vite. The final stage copies only the result, so node stays out of the image.
+FROM ${LARAVEL_IMAGE} AS web-build
+WORKDIR /build
+RUN apk add --no-cache nodejs npm \
+    && composer create-project laravel/laravel app --no-interaction --prefer-dist \
+    && cd app \
+    && composer require livewire/livewire --no-interaction
+COPY web/ /build/app/
+# The default migrations (users, cache, jobs) are not used: the only table is the history.
+# An empty APP_KEY makes init-laravel of the base image generate a key at the first start.
+RUN cd app \
+    && rm -f database/migrations/*.php \
+    && sed -i 's/^APP_KEY=.*/APP_KEY=/' .env \
+    && npm install --no-audit --no-fund \
+    && npm run build
+
+# Tests of web/. Build this target on its own: `docker build -f src/Dockerfile --target web-test .`
+FROM web-build AS web-test
+RUN cd app && php artisan test
+
+# What the image ships: no tests, no node_modules, no dev packages.
+FROM web-build AS web-app
+RUN cd app \
+    && rm -rf tests node_modules \
+    && composer install --no-dev --optimize-autoloader --no-interaction
+
+# The web image: the site and the muken CLI in one image. SSH is on, and it needs SSHD_AUTHORIZED_KEYS.
+# Docker needs no daemon here, because muken runs every docker command on the server over SSH.
+FROM ${LARAVEL_IMAGE} AS web
+LABEL org.opencontainers.image.source="https://github.com/shinsenter/muken" \
+      org.opencontainers.image.description="muken: the CLI and a web UI to put your Docker app on a server you own" \
+      org.opencontainers.image.licenses="Apache-2.0"
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates openssh-client
+COPY --from=build /out/muken /usr/local/bin/muken
+COPY LICENSE NOTICE TRADEMARK.md THIRD_PARTY_NOTICES.txt /licenses/muken/
+COPY --from=web-app /build/app/ /var/www/html/
+COPY src/docker/web/rootfs/ /
+# Sessions, cache and queue use files, so the history is the only use of a database.
+# LARAVEL_AUTO_MIGRATION is off because the app prepares its own SQLite file (see HistoryStore).
+ENV ENABLE_SSHD=1 \
+    APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_CHANNEL=stderr \
+    SESSION_DRIVER=file \
+    CACHE_STORE=file \
+    QUEUE_CONNECTION=sync \
+    DB_CONNECTION=sqlite \
+    LARAVEL_AUTO_MIGRATION=0 \
+    LARAVEL_ENABLE_SCHEDULER=0 \
+    MUKEN_WORKDIR=/work \
+    MUKEN_CONFIG=/work/muken.yaml \
+    MUKEN_API_ADDR=127.0.0.1:7600

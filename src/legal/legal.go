@@ -1,9 +1,9 @@
 // Copyright 2026 Mai Nhut Tan
 // SPDX-License-Identifier: Apache-2.0
 
-// Package muken holds the legal texts that are compiled into the binary,
+// Package legal holds the legal texts that are compiled into the binary,
 // so `muken version --license` works even when the binary is the only file you have.
-package muken
+package legal
 
 import _ "embed"
 
@@ -23,7 +23,7 @@ var Notice string
 var Trademark string
 
 // ThirdParty has the licenses of the software inside the binary.
-// scripts/third-party-notices.sh writes the file.
+// src/scripts/third-party-notices.sh writes the file.
 //
 //go:embed THIRD_PARTY_NOTICES.txt
 var ThirdParty string

@@ -6,9 +6,10 @@ muken is a command-line program. It reads `muken.yaml`, connects to a server ove
 
 ## Work on it
 
-You need Go 1.26 or newer. Run everything from the root of the repository.
+You need Go 1.26 or newer. Run `make` from the root of the repository. Run `go` commands inside `src/`, where `go.mod` is.
 
 ```shell
+cd src                                 # go.mod is here
 go test ./...                          # all tests, offline, a few seconds
 make check                             # vet, tests and gofmt in one command. It prints only problems
 make check-ci                          # the same with no home and no ssh-agent, like CI
@@ -17,7 +18,7 @@ go vet ./...                           # the checks the compiler does not do
 gofmt -l .                             # lists files that are not formatted. gofmt -w . fixes them
 go run golang.org/x/vuln/cmd/govulncheck@latest ./...   # known vulnerabilities in the code and the dependencies
 go run ./cmd/muken help                # run it without building
-make dist                              # binaries for linux and macOS in dist/
+make dist                              # (from the root) binaries for linux and macOS in dist/
 ```
 
 The tests never touch a real server, Docker or the network.
@@ -26,29 +27,29 @@ The tests never touch a real server, Docker or the network.
 
 | Folder | What it does | In PHP terms |
 |---|---|---|
-| `cmd/muken/` | The commands (`init`, `deploy`, `status`, ...). `main.go` has the list of commands | The controllers, plus `index.php` |
-| `internal/config/` | Reads `muken.yaml`, fills defaults, checks it and explains each mistake | A form request with validation rules |
-| `internal/catalog/` | The images and apps muken knows (WordPress, Laravel, ...) with their defaults | A config file with a lookup function |
-| `internal/deploy/` | The part that matters: `Provision`, `Plan`, `Deploy`, `Rollback`, `Maintenance` | The service class |
-| `internal/remote/` | Runs a command on the server over SSH. Also a fake one for tests | An interface with two implementations |
-| `internal/provider/` | Creates servers at DigitalOcean, Hetzner, Vultr, AWS and Google Cloud | An API client per vendor |
-| `internal/cloudflare/` | DNS records, SSL mode, cache purge | An API client |
-| `internal/secrets/` | Keeps secrets encrypted in the repository (age) | A small vault |
-| `internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys, with its own `.gitignore` | A small helper |
-| `internal/agent/` | The monitoring sidecar: reads Docker, shows a page, sends alerts | A separate small app |
-| `internal/k8s/`, `internal/ci/` | Print Kubernetes manifests and a GitHub Actions file | Template renderers |
-| `internal/ui/` | Prints progress, sections and rows, framed prompts with arrow keys, formats errors with a hint. The colors are in `theme.go` | A console helper |
-| `legal.go` and the root texts | The license, notice, name policy and third-party licenses, compiled into the binary (`muken version --license`) | `resources/` files read at start |
-| `Dockerfile` | The Docker image `cli` (`docker build --target cli .`) | The Dockerfile of a PHP app |
+| `src/cmd/muken/` | The commands (`init`, `deploy`, `status`, ...). `main.go` has the list of commands | The controllers, plus `index.php` |
+| `src/internal/config/` | Reads `muken.yaml`, fills defaults, checks it and explains each mistake | A form request with validation rules |
+| `src/internal/catalog/` | The images and apps muken knows (WordPress, Laravel, ...) with their defaults | A config file with a lookup function |
+| `src/internal/deploy/` | The part that matters: `Provision`, `Plan`, `Deploy`, `Rollback`, `Maintenance` | The service class |
+| `src/internal/remote/` | Runs a command on the server over SSH. Also a fake one for tests | An interface with two implementations |
+| `src/internal/provider/` | Creates servers at DigitalOcean, Hetzner, Vultr, AWS and Google Cloud | An API client per vendor |
+| `src/internal/cloudflare/` | DNS records, SSL mode, cache purge | An API client |
+| `src/internal/secrets/` | Keeps secrets encrypted in the repository (age) | A small vault |
+| `src/internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys, with its own `.gitignore` | A small helper |
+| `src/internal/agent/` | The monitoring sidecar: reads Docker, shows a page, sends alerts | A separate small app |
+| `src/internal/k8s/`, `src/internal/ci/` | Print Kubernetes manifests and a GitHub Actions file | Template renderers |
+| `src/internal/ui/` | Prints progress, sections and rows, framed prompts with arrow keys, formats errors with a hint. The colors are in `theme.go` | A console helper |
+| `src/legal/` and the root texts | The license, notice, name policy and third-party licenses, compiled into the binary (`muken version --license`) | `resources/` files read at start |
+| `src/Dockerfile` | The Docker image `cli` (`docker build -f src/Dockerfile --target cli .`) | The Dockerfile of a PHP app |
 | `.github/workflows/` | `ci` (test and scan), `release` (binaries), `image` (Docker image), `cleanup` (deletes old workflow runs every week) | The pipeline files |
 | `openspec/` | The specs of each capability, the changes in progress and the roadmap to 1.0. `AGENTS.md` points here | A requirements folder next to the code |
-| `scripts/` | `third-party-notices.sh` collects the licenses of the dependencies | A build helper |
+| `src/scripts/` | `third-party-notices.sh` collects the licenses of the dependencies | A build helper |
 
 Each folder is one Go package. A package is a namespace: the files in it share names, and the folder name is the name you use when you call it (`config.Load`, `deploy.New`).
 
 ## One deploy, step by step
 
-`Engine.Deploy` in `internal/deploy/deploy.go` is the best place to start reading.
+`Engine.Deploy` in `src/internal/deploy/deploy.go` is the best place to start reading.
 
 1. Take a lock on the server (a folder that only one process can create).
 2. Check that Docker, the `muken` network and the proxy exist.
@@ -68,7 +69,7 @@ If a step before 6 fails, the new containers are removed and the old release nev
 | PHP | Go |
 |---|---|
 | `namespace App\Foo` and `use` | `package foo` and `import` |
-| `composer.json` | `go.mod` (and `go.sum`, like `composer.lock`) |
+| `composer.json` | `src/go.mod` (and `src/go.sum`, like `composer.lock`) |
 | A class with methods | A `struct` and functions with a receiver: `func (e *Engine) Deploy(...)` |
 | `private` and `public` | A lowercase name is private to the package. A Capital name is public |
 | An interface you `implements` | An interface is satisfied by any type that has the methods. `remote.Runner` is one: `SSH` and `Fake` both fit |
@@ -101,7 +102,7 @@ means: when a command contains `docker pull`, fail with `denied`. After the call
 
 The cloud clients (`provider`, `cloudflare`) are tested against a small local HTTP server from `net/http/httptest`.
 
-A test must not depend on the machine that runs it. Do not read the real `~/.ssh`, the ssh-agent or your environment. Use `t.TempDir()` and `t.Setenv(...)`. `isolateSSH` in `internal/remote/remote_test.go` is the example. CI runs on a runner with no SSH key, so a test that quietly used your own key passes on your laptop and fails there. To check, run the tests with an empty home:
+A test must not depend on the machine that runs it. Do not read the real `~/.ssh`, the ssh-agent or your environment. Use `t.TempDir()` and `t.Setenv(...)`. `isolateSSH` in `src/internal/remote/remote_test.go` is the example. CI runs on a runner with no SSH key, so a test that quietly used your own key passes on your laptop and fails there. To check, run the tests with an empty home:
 
 ```shell
 env HOME=$(mktemp -d) SSH_AUTH_SOCK= GOCACHE=$(go env GOCACHE) GOMODCACHE=$(go env GOMODCACHE) go test ./...
@@ -109,19 +110,19 @@ env HOME=$(mktemp -d) SSH_AUTH_SOCK= GOCACHE=$(go env GOCACHE) GOMODCACHE=$(go e
 
 ## Recipes
 
-Add a preset (an image or app): add one entry in `internal/catalog/catalog.go`. A test checks that every folder in `src/webapps/` has a preset.
+Add a preset (an image or app): add one entry in `src/internal/catalog/catalog.go`. A test checks that every folder in `src/webapps/` has a preset.
 
-Add a setting to `muken.yaml`: add the field to the struct in `internal/config/config.go` (with a `yaml:"name"` tag), give it a default in `ApplyDefaults`, check it in `Validate`, use it, add a test, and describe it in `docs/guide.md` and `CHANGELOG.md`. An unknown key in the file is an error on purpose, so users see typos.
+Add a setting to `muken.yaml`: add the field to the struct in `src/internal/config/config.go` (with a `yaml:"name"` tag), give it a default in `ApplyDefaults`, check it in `Validate`, use it, add a test, and describe it in `docs/guide.md` and `CHANGELOG.md`. An unknown key in the file is an error on purpose, so users see typos.
 
-Add a command: first check that a flag or a subcommand of an existing command does not fit. The list stays short on purpose (`deploy --plan`, `init --list`, `server key`, `render ci`, `version --license`). If a new command is needed, write a function in `cmd/muken/` that takes `(ctx, printer, args)` and returns an `error`, then add it to the `commands` map in `main.go`. The help text comes from that map.
+Add a command: first check that a flag or a subcommand of an existing command does not fit. The list stays short on purpose (`deploy --plan`, `init --list`, `server key`, `render ci`, `version --license`). If a new command is needed, write a function in `src/cmd/muken/` that takes `(ctx, printer, args)` and returns an `error`, then add it to the `commands` map in `main.go`. The help text comes from that map.
 
-Add a cloud provider: implement the `Provider` interface in `internal/provider/`, add its name to `provider.New`, and copy the test of the DigitalOcean client.
+Add a cloud provider: implement the `Provider` interface in `src/internal/provider/`, add its name to `provider.New`, and copy the test of the DigitalOcean client.
 
 ## The license inside the binary
 
-`LICENSE`, `NOTICE`, `TRADEMARK.md` and `THIRD_PARTY_NOTICES.txt` at the root are compiled into the binary by `legal.go`, and `muken version --license` prints them. Nothing is copied: the root files are the only copies.
+`LICENSE`, `NOTICE`, `TRADEMARK.md` and `THIRD_PARTY_NOTICES.txt` at the root are the source. `go:embed` cannot read a parent folder, so `make sync-legal` copies them to `src/legal/`, where `legal.go` compiles them into the binary. `muken version --license` prints them. `TestCopiesMatchTheRootFiles` fails when a copy differs.
 
-When you add or update a dependency, run `scripts/third-party-notices.sh` and commit the new `THIRD_PARTY_NOTICES.txt`. A test (`TestEveryModuleHasItsNotice`) fails when a module that goes into a release binary has no entry.
+When you add or update a dependency, run `src/scripts/third-party-notices.sh` and commit the new `THIRD_PARTY_NOTICES.txt` (the script also updates the copy in `src/legal/`). A test (`TestEveryModuleHasItsNotice`) fails when a module that goes into a release binary has no entry.
 
 ## Rules this code follows
 

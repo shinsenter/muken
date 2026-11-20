@@ -10,9 +10,9 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY src/go.mod src/go.sum ./
 RUN go mod download
-COPY . .
+COPY src/ .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o /out/muken ./cmd/muken
 

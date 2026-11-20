@@ -12,11 +12,8 @@ name: Image
 on:
   pull_request:
     paths:
-      - 'Dockerfile'
       - '.dockerignore'
-      - 'go.mod'
-      - 'go.sum'
-      - '**.go'
+      - 'src/**'
       - '.github/workflows/image.yml'
   push:
     tags:
@@ -44,6 +41,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: src/Dockerfile
           target: cli
           load: true
           tags: muken:scan
@@ -110,6 +108,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: src/Dockerfile
           target: cli
           platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ github.ref_name }}

@@ -1,9 +1,10 @@
 // Copyright 2026 Mai Nhut Tan
 // SPDX-License-Identifier: Apache-2.0
 
-package muken
+package legal
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -23,10 +24,10 @@ func TestLicenseTextsAreInTheBinary(t *testing.T) {
 	}
 }
 
-// A new dependency must come with its license text. Run scripts/third-party-notices.sh if this fails.
+// A new dependency must come with its license text. Run src/scripts/third-party-notices.sh if this fails.
 func TestEveryModuleHasItsNotice(t *testing.T) {
 	for _, target := range [][2]string{{"linux", "amd64"}, {"linux", "arm64"}, {"darwin", "amd64"}, {"darwin", "arm64"}} {
-		cmd := exec.Command("go", "list", "-deps", "-f", "{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}}{{end}}{{end}}", "./cmd/muken")
+		cmd := exec.Command("go", "list", "-deps", "-f", "{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}}{{end}}{{end}}", "github.com/shinsenter/muken/cmd/muken")
 		cmd.Env = append(cmd.Environ(), "GOOS="+target[0], "GOARCH="+target[1])
 		out, err := cmd.Output()
 		if err != nil {
@@ -36,6 +37,23 @@ func TestEveryModuleHasItsNotice(t *testing.T) {
 			if line != "" && !strings.Contains(ThirdParty, line) {
 				t.Errorf("THIRD_PARTY_NOTICES.txt has no entry for %q (%s/%s)", line, target[0], target[1])
 			}
+		}
+	}
+}
+
+// The root files are the source. Run `make sync-legal` if this fails.
+func TestCopiesMatchTheRootFiles(t *testing.T) {
+	for _, name := range []string{"LICENSE", "NOTICE", "TRADEMARK.md", "THIRD_PARTY_NOTICES.txt"} {
+		root, err := os.ReadFile("../../" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		copy, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(root) != string(copy) {
+			t.Errorf("src/legal/%s differs from %s at the root", name, name)
 		}
 	}
 }

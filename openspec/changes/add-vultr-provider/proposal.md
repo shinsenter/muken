@@ -10,6 +10,6 @@
 
 ## Impact
 - Specs: none. No spec covers servers at providers yet.
-- Code: `internal/provider/vultr.go`, `provider.go`, `cmd/muken/main.go`, `cmd/muken/cmd_misc.go`
+- Code: `src/internal/provider/vultr.go`, `provider.go`, `src/cmd/muken/main.go`, `src/cmd/muken/cmd_misc.go`
 - Docs: `docs/guide.md`, `docs/development.md`, `README.md`, `CHANGELOG.md`
 - Roadmap: none. The client passes against mocks only, like Hetzner.

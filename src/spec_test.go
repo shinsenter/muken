@@ -12,6 +12,13 @@ import (
 	"testing"
 )
 
+// The tests read openspec/ and the docs, so they run from the repository root.
+func init() {
+	if err := os.Chdir(".."); err != nil {
+		panic(err)
+	}
+}
+
 var (
 	testFunc = regexp.MustCompile(`(?m)^func (Test\w+)\(`)
 	testName = regexp.MustCompile("`(Test\\w+)`")
@@ -21,7 +28,7 @@ var (
 func knownTests(t *testing.T) map[string]bool {
 	t.Helper()
 	known := map[string]bool{}
-	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir("src", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

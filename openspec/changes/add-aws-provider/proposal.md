@@ -13,6 +13,6 @@
 
 ## Impact
 - Specs: none. No spec covers servers at providers yet.
-- Code: `internal/provider/aws.go`, `provider.go`, `cmd/muken/cmd_misc.go`, `cmd/muken/main.go`
+- Code: `src/internal/provider/aws.go`, `provider.go`, `src/cmd/muken/cmd_misc.go`, `src/cmd/muken/main.go`
 - Docs: `docs/guide.md`, `docs/development.md`, `README.md`, `CHANGELOG.md`
 - Roadmap: none. The client passes against mocks only.

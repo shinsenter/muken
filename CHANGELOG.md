@@ -3,6 +3,7 @@
 All notable changes are in this file.
 
 ## [Unreleased]
+- Go source, `Dockerfile` and `scripts/` moved into `src/`. Run `go` commands inside `src/`. `make` targets work from the root. `src/legal/` holds copies of the legal texts (`make sync-legal`).
 - First version (0.1). Commands: `init`, `server`, `up`, `doctor`, `deploy`, `rollback`, `scale`, `maintenance`, `status`, `logs`, `exec`, `ssh`, `unlock`, `secrets`, `dns`, `agent`, `render`, `version`. Similar jobs share one command: `deploy --plan`, `init --list`, `server key`, `render ci`, `version --license`.
 - Deploy with no downtime through Traefik, with a health check before the switch and an automatic return when a check fails.
 - Servers at DigitalOcean, Hetzner, Vultr (`--provider vultr`, token in `VULTR_API_KEY`), AWS (`--provider aws`, signed with SigV4 and no SDK, `server.user` is set to `ubuntu`), and Google Cloud (`--provider gcp`, service account key, no SDK), DNS and certificates through Cloudflare, secrets encrypted with age, a monitoring sidecar and Kubernetes manifests.
@@ -15,5 +16,5 @@ All notable changes are in this file.
 - Apache License 2.0. The license, the notices and the name policy are inside the binary (`muken version --license`).
 - Fix: `muken up` no longer hangs on a server that does not answer SSH. The handshake times out after 15 seconds and Ctrl+C stops it at once.
 - Console output in the style of Laravel: the questions are framed prompts you answer with the arrow keys, space and Enter, and `ui` has sections and dotted rows. Output in CI and pipes has no colors and no prompts. Ctrl+C at a prompt ends the command with exit code 130.
-- The accent color is lime, set in `internal/ui/theme.go`. `help`, `status`, `up`, `doctor` and the `-h` page of each command use sections and dotted rows.
+- The accent color is lime, set in `src/internal/ui/theme.go`. `help`, `status`, `up`, `doctor` and the `-h` page of each command use sections and dotted rows.
 - `muken init` offers the PHP release candidate (`8.6`) and asks for one database or none, then asks about Redis. `muken init --list` uses sections.

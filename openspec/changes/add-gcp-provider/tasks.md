@@ -1,9 +1,9 @@
 ## Context
-Read: `internal/provider/aws.go`, `internal/provider/provider.go`
+Read: `src/internal/provider/aws.go`, `src/internal/provider/provider.go`
 Skip: everything else
 
 ## 1. Client
-- [x] 1.1 Add `internal/provider/gcp.go` with the JWT token flow and the Compute calls. Check: `make t PKG=./internal/provider RUN=GCP`
+- [x] 1.1 Add `src/internal/provider/gcp.go` with the JWT token flow and the Compute calls. Check: `make t PKG=./internal/provider RUN=GCP`
 
 ## 2. Text and docs
 - [x] 2.1 Update help strings and docs. Check: `make check`

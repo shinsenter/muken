@@ -1,11 +1,13 @@
 #!/bin/sh
 # Writes THIRD_PARTY_NOTICES.txt: the license text of the Go standard library and of every module
 # that goes into the binary. The file is embedded, and `muken version --third-party` prints it.
-# Run it again after you change go.mod, then commit the file. A test fails when a module is missing.
+# Run it again after you change src/go.mod, then commit both copies (the root file and src/legal/). A test fails when a module is missing.
 set -eu
 
 cd "$(git rev-parse --show-toplevel)"
 out=THIRD_PARTY_NOTICES.txt
+root="$PWD"
+cd src
 
 print_title() {
     echo
@@ -59,6 +61,7 @@ go_license() {
             print_title "$path $version"
             print_license "$dir"
         done
-} >"$out"
+} >"$root/$out"
+cp "$root/$out" "$root/src/legal/$out"
 
-echo "wrote $out"
+echo "wrote $out and src/legal/$out"

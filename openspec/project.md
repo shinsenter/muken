@@ -12,8 +12,8 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 
 ## Tech
 
-- Go. The version is in `go.mod`.
-- Four dependencies: SSH (`x/crypto`), YAML, age and `golang.org/x/term` (raw keyboard mode and terminal width for the prompts in `internal/ui`). A new one needs a reason in the change proposal.
+- Go. The version is in `src/go.mod`.
+- Four dependencies: SSH (`x/crypto`), YAML, age and `golang.org/x/term` (raw keyboard mode and terminal width for the prompts in `src/internal/ui`). A new one needs a reason in the change proposal.
 - muken runs on the user's machine or in the Docker image. It acts on the server over SSH, with `docker` commands.
 - Server: Debian or Ubuntu. Proxy: Traefik. One server per app.
 - CI: GitHub Actions. `ci` tests and scans, `release` builds binaries on a `v*` tag, `image` builds the Docker image on a `v*` tag, `cleanup` deletes finished workflow runs older than N days (default 7) every Monday.
@@ -23,19 +23,19 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 
 | Path | Purpose |
 |---|---|
-| `cmd/muken/` | The commands. `main.go` has the table of commands |
-| `internal/config/` | Reads and checks `muken.yaml` |
-| `internal/catalog/` | The images and apps muken knows, with their defaults |
-| `internal/deploy/` | `Provision`, `Plan`, `Deploy`, `Rollback`, `Maintenance` |
-| `internal/remote/` | SSH runner and the fake one for tests |
-| `internal/provider/`, `internal/cloudflare/` | DigitalOcean, Hetzner and Cloudflare clients |
-| `internal/secrets/` | Encrypted secrets (age) |
-| `internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys |
-| `internal/agent/` | The monitoring sidecar |
-| `internal/k8s/`, `internal/ci/`, `internal/ui/` | Manifests, the CI workflow file, console output |
-| `legal.go`, `LICENSE`, `NOTICE`, `TRADEMARK.md`, `THIRD_PARTY_NOTICES.txt` | Legal texts, compiled into the binary |
-| `scripts/third-party-notices.sh` | Writes `THIRD_PARTY_NOTICES.txt` |
-| `Dockerfile` | The image: target `cli`, on `alpine` with `openssh-client` and `ca-certificates` |
+| `src/cmd/muken/` | The commands. `main.go` has the table of commands |
+| `src/internal/config/` | Reads and checks `muken.yaml` |
+| `src/internal/catalog/` | The images and apps muken knows, with their defaults |
+| `src/internal/deploy/` | `Provision`, `Plan`, `Deploy`, `Rollback`, `Maintenance` |
+| `src/internal/remote/` | SSH runner and the fake one for tests |
+| `src/internal/provider/`, `src/internal/cloudflare/` | DigitalOcean, Hetzner and Cloudflare clients |
+| `src/internal/secrets/` | Encrypted secrets (age) |
+| `src/internal/project/` | The `.muken` folder next to `muken.yaml` that holds the keys |
+| `src/internal/agent/` | The monitoring sidecar |
+| `src/internal/k8s/`, `src/internal/ci/`, `src/internal/ui/` | Manifests, the CI workflow file, console output |
+| `src/legal/`, `LICENSE`, `NOTICE`, `TRADEMARK.md`, `THIRD_PARTY_NOTICES.txt` | Legal texts, compiled into the binary. The root files are the source, `make sync-legal` copies them to `src/legal/` |
+| `src/scripts/third-party-notices.sh` | Writes `THIRD_PARTY_NOTICES.txt` |
+| `src/Dockerfile` | The image (build from the root: `docker build -f src/Dockerfile --target cli .`): target `cli`, on `alpine` with `openssh-client` and `ca-certificates` |
 | `.github/workflows/` | `ci`, `release`, `image`, `cleanup` |
 | `openspec/` | Specs, changes, roadmap |
 
@@ -64,11 +64,11 @@ Users read `docs/guide.md`. The maintainer, who is learning Go from this code, r
 - Highlight with GitHub alerts: `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`. The Pages site draws them with the script in `_includes/head-custom.html`. The theme is `jekyll-theme-midnight`.
 - Use placeholders that cannot be mistaken for real values, because people copy commands: `YOUR_SERVER_IP`, `example.com`.
 - The Docker example mounts only what muken needs. The age key is `.muken/age.key` and the SSH key is `.muken/.ssh`, so `-v "$PWD":/work` carries both.
-- After a docs change, read it again as the user. Look for contradictions, old versions (the Go version comes from `go.mod`) and claims that the code does not back.
+- After a docs change, read it again as the user. Look for contradictions, old versions (the Go version comes from `src/go.mod`) and claims that the code does not back.
 
 ## Task rules
 
-- Dependency change: run `scripts/third-party-notices.sh` and commit `THIRD_PARTY_NOTICES.txt`. Run `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` after the change and before a release. Keep dependencies and the base image current, so known CVEs do not ship.
+- Dependency change: run `src/scripts/third-party-notices.sh` and commit `THIRD_PARTY_NOTICES.txt`. Run `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` after the change and before a release. Keep dependencies and the base image current, so known CVEs do not ship.
 - Code change: change `docs/guide.md` and `CHANGELOG.md` with the code.
 - Commit types follow semver: `feat:` is a minor bump, `fix:` a patch bump, `!` a major bump.
 - Tag `vX.Y.Z` on `main` starts the `release` workflow. Never tag without being asked.

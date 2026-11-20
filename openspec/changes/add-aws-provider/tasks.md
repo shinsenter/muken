@@ -1,9 +1,9 @@
 ## Context
-Read: `internal/provider/vultr.go`, `internal/provider/provider.go`, `createServer` in `cmd/muken/cmd_misc.go`
+Read: `src/internal/provider/vultr.go`, `src/internal/provider/provider.go`, `createServer` in `src/cmd/muken/cmd_misc.go`
 Skip: everything else
 
 ## 1. Client
-- [x] 1.1 Add `internal/provider/aws.go` with SigV4 and the EC2 calls. Check: `make t PKG=./internal/provider RUN=AWS`
+- [x] 1.1 Add `src/internal/provider/aws.go` with SigV4 and the EC2 calls. Check: `make t PKG=./internal/provider RUN=AWS`
 - [x] 1.2 Add `User` to `Server` and write it to `server.user` in `createServer`. Check: `make t PKG=./cmd/muken RUN=Server`
 
 ## 2. Text and docs

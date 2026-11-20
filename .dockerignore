@@ -4,3 +4,6 @@ dist
 docs
 *.test
 .DS_Store
+third_party
+web/vendor
+web/node_modules

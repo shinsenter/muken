@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git submodule update --init --remote --depth 1 third_party/shinsenter-php >/dev/null 2>&1 || echo 'third_party/shinsenter-php: update failed, using the checked-out commit'",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

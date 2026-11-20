@@ -18,12 +18,17 @@ Skip: everything else. Do not read `third_party/` unless a detail is missing fro
 ## 4. Docs
 - [x] 4.1 Add the Web section to `docs/guide.md`. Update `development.md`, `README.md`, `CHANGELOG.md`, `project.md`, `index.md`. Check: `make check`
 
+## 5. Setup in the browser
+- [x] 5.1 Add `muken init --ssh-key`, the endpoints `presets`, `init`, `server-key`, the page `/setup` and the redirect from Status. Check: `make check`, `docker build --target web-test` (15 tests), and a run of the image: `/` goes to `/setup`, a key and `muken.yaml` are made, a second init gives 409
+
 ## Log
 - 2026-11-20: `muken serve` smoke-tested on loopback with a temp folder: version, `no_config`, file read, path escape, refusal of `0.0.0.0`. Status, deploy and the rest need a server and were not run.
 - The web is an overlay on `composer create-project laravel/laravel`, because the machine has no PHP. The framework versions are whatever is latest at build time. The built CSS has the Tailwind classes of the views, so the new-project setup includes Tailwind.
 - 2026-11-20, Docker on a Mac, image `web` with a temp `/work` and no `muken.yaml`: every page answers 200 and shows the `no_config` message. `age.key` is not listed in Config. Deleting `history.sqlite` while the container runs gives an empty History and a new file. SSH: key login works, no key means `Permission denied`. No error in the container log.
 - Bugs the run found: the Livewire default layout is `layouts::app` in the newest version (now `#[Layout]` on each component). `php`, `composer` and `artisan` are aliases that run in `APP_PATH` (build stages set `APP_PATH=/work`). `init-laravel` could not write `.env` as the app user, so every page was a 500 without `APP_KEY` (the hook makes the key as root).
 - 2026-11-20 later: the app is copied from `/source/`. `INITIAL_PROJECT=""` did not stop the base from making a Laravel project (the default comes back), `cp -n` kept its `routes/web.php` and `composer update` removed Livewire, so `/deploy` was a 404. `DISABLE_AUTORUN_CREATING_PROJECT=1` fixes it. `composer.json` and `package.json` are removed so the first start runs no `composer update` or `npm install`. `openssh-server` is baked in. With `--network none`: pages 200, sshd runs, footer shows. Footer added: version and copyright.
+- Setup, run in Docker on a Mac: `/` answers 302 to `/setup`. `POST /v1/server-key` and `POST /v1/init` made `.muken/.ssh/id_ed25519` (mode 600) and `muken.yaml` with `ssh_key: /work/.muken/.ssh/id_ed25519`. A second init answered 409. The private key is not in the Config file list. The form itself was not clicked in a browser: the Livewire tests cover it.
+- Known gap: `ssh_key` holds the path inside the container (`/work/...`). The same folder used by the CLI on the host has another path. Not solved.
 - Not run: a deploy, rollback or status against a real server through the web, arm64, Trivy on the `web` image, the GitHub workflow.
 - `docker run ghcr.io/shinsenter/muken deploy` now starts the web image. The guide uses `:cli` for the CLI.
 - Facts about shinsenter/laravel come from `openspec/upstream.md` (commit `49c8243`). Docker Hub was not checked.

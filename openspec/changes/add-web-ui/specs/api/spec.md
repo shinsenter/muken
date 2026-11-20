@@ -54,6 +54,23 @@ The system SHALL give `GET /v1/files?path=<relative path>` for the folder of `mu
 
 Tests: `TestAPIFilesAreReadOnlyAndStayInside`
 
+### Requirement: First setup
+The system SHALL give `GET /v1/presets`, `POST /v1/init`, `GET` and `POST /v1/server-key`. `POST /v1/init` SHALL run `muken init` with the fields of the body (preset, app, host, domain, email, image, php, db, workers, cloudflare, agent, and `ssh_key`, the name of a key made by `server-key`). It SHALL check every field against a strict pattern and pass each as one argument `--name=value`. It SHALL answer `409` when `muken.yaml` exists, and SHALL NOT pass `--force`. `server-key` SHALL run `muken server key <name>`, never replace a key, and give the public key only.
+
+#### Scenario: The first muken.yaml
+- **WHEN** there is no `muken.yaml` and the client posts a preset, an app name and a host
+- **THEN** `muken.yaml` is written, with `server.ssh_key` when a key name was given
+
+#### Scenario: A file exists
+- **WHEN** `muken.yaml` exists
+- **THEN** `POST /v1/init` answers `409 config_exists` and runs nothing
+
+#### Scenario: A value that looks like a flag
+- **WHEN** a field is `--force` or `-oProxyCommand=x`
+- **THEN** the answer is `400` and nothing runs
+
+Tests: `TestAPIInitMakesTheFirstConfigOnly`, `TestAPIInitRefusesBadFields`, `TestAPIServerKeyShowsOnlyThePublicKey`, `TestServeBackendInitMakesTheFileAndNeverOverwrites`, `TestInitWritesTheSSHKeyPath`
+
 ### Requirement: Errors tell what to do
 The system SHALL answer an error as `{"error": {"code": "...", "message": "...", "hint": "..."}}` with the hint that the CLI would print.
 

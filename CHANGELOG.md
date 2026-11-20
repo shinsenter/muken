@@ -4,6 +4,7 @@ All notable changes are in this file.
 
 ## [Unreleased]
 - Web UI in the `latest` image: status, deploy with plan, rollback, scale, maintenance, up, doctor, logs, config and a read-only view of the working folder. No login. History of operations in `.muken/history.sqlite`, recreated when missing. The small image is now `ghcr.io/shinsenter/muken:cli`.
+- Setup in the browser: with no `muken.yaml`, the web UI opens a form (`/setup`) that makes it, and an SSH key. It never overwrites an existing file. `muken init --ssh-key <file>` sets `server.ssh_key`.
 - `muken serve`: a JSON API on loopback for the web UI.
 - Go source, `Dockerfile` and `scripts/` moved into `src/`. Run `go` commands inside `src/`. `make` targets work from the root. `src/legal/` holds copies of the legal texts (`make sync-legal`).
 - First version (0.1). Commands: `init`, `server`, `up`, `doctor`, `deploy`, `rollback`, `scale`, `maintenance`, `status`, `logs`, `exec`, `ssh`, `unlock`, `secrets`, `dns`, `agent`, `render`, `version`. Similar jobs share one command: `deploy --plan`, `init --list`, `server key`, `render ci`, `version --license`.

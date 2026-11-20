@@ -95,6 +95,7 @@ One server per app. Debian and Ubuntu servers only. No load balancer over severa
 | Neither image has a Docker CLI or a `dind` target. `cli` builds on `alpine:latest` with `apk upgrade` | muken runs docker on the server over SSH. A small image with the newest base has fewer CVEs |
 | `latest` is the `web` image, on `shinsenter/laravel` with SSH on. The small image is `:cli` | The maintainer wants one image for the CLI and the site. Anyone who runs `docker run ghcr.io/shinsenter/muken deploy` must use `:cli` now |
 | The `web` image keeps the finished app in `/source/`. The base image copies it into `/var/www/html` at the first start, and nothing is installed at start | The base image works this way. It also makes the start work with no network |
+| The web writes `muken.yaml` only through the setup form, only when the file is missing, and never overwrites it | The user wanted to set up in the browser. A web that could edit a live config would be a bigger risk |
 | The web has no login. The API has no login and refuses a non-loopback address. A change asks for a second click | A login is not wanted. The risk is in the guide, next to the example |
 | Only the history is in SQLite. Config is the file `muken.yaml`. Session, cache and queue use files | A missing SQLite file must never break the app |
 | The specs of this repo cache the facts of shinsenter/php in `openspec/upstream.md` | A session reads one small file, and the hook says when to refresh it |

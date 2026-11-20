@@ -736,10 +736,12 @@ docker run -d --name muken \
 
 Open http://127.0.0.1:8080. What the example does:
 
-- `-v "$PWD":/work` is the working folder of muken: `muken.yaml`, `.muken/` and the files next to them. The web reads them, and never writes `muken.yaml`.
+- `-v "$PWD":/work` is the working folder of muken: `muken.yaml`, `.muken/` and the files next to them. The web reads them. It writes `muken.yaml` in one case only: the setup form, when the file is missing, and it never overwrites it.
 - `APP_UID` and `APP_GID` make the app run as you, so it can read the keys in `.muken/`. Without them the files may be unreadable.
 - `SSHD_AUTHORIZED_KEYS` is for SSH into the container, which is on by default. With no key set, sshd runs and nobody can log in. Do not publish port 22 unless you need it.
 - Run the CLI in the same container: `docker exec -w /work muken muken status`.
+
+With no `muken.yaml` in the folder, the first visit goes to a setup form. It asks what you deploy (a preset), the app name, the server IP, domains and so on, and it does what `muken init` does. It can also make an SSH key and shows the public key to add to your server. The private key stays in `.muken/.ssh` and the page never shows it. `muken.yaml` keeps the path of the key as the container sees it (`/work/.muken/.ssh/...`). The same flags exist on the command line: `muken init --ssh-key <file>`.
 
 The app is inside the image in `/source`, and the image copies it to `/var/www/html` at the first start. It needs no network to start. The footer of each page shows the muken version and the copyright.
 

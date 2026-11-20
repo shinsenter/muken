@@ -59,6 +59,7 @@ func splitList(s string) []string {
 type initFlags struct {
 	preset, app, domains, email, host string
 	php, image, dbs, workers          string
+	sshKey                            string
 	cloudflare, agent, force, list    bool
 }
 
@@ -75,6 +76,7 @@ func cmdInit(_ context.Context, p *ui.Printer, args []string) error {
 	flagSet.StringVar(&flags.image, "image", "", "your own image")
 	flagSet.StringVar(&flags.dbs, "db", "", "databases: postgres, mysql, mariadb, redis")
 	flagSet.StringVar(&flags.workers, "workers", "", "background workers from the preset, e.g. queue,scheduler")
+	flagSet.StringVar(&flags.sshKey, "ssh-key", "", "private key file for the server (see `muken server key`)")
 	flagSet.BoolVar(&flags.cloudflare, "cloudflare", false, "use Cloudflare for DNS and TLS")
 	flagSet.BoolVar(&flags.agent, "agent", false, "enable the monitoring sidecar")
 	flagSet.BoolVar(&flags.force, "force", false, "overwrite an existing file")
@@ -105,6 +107,7 @@ func cmdInit(_ context.Context, p *ui.Printer, args []string) error {
 	if err := addWorkers(p, cfg, preset, flags.workers); err != nil {
 		return err
 	}
+	cfg.Server.SSHKey = flags.sshKey
 	cfg.Agent.Enabled = flags.agent
 	if !flags.agent && p.Interactive {
 		cfg.Agent.Enabled = p.Confirm("Install the monitoring page and alerts (muken agent)?", false)

@@ -48,6 +48,23 @@ func TestInitList(t *testing.T) {
 	}
 }
 
+func TestInitWritesTheSSHKeyPath(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "muken.yaml")
+	key := filepath.Join(dir, ".muken", ".ssh", "id_ed25519")
+	_, _, err := runCmd(t, cmdInit, "-c", cfg, "--preset", "laravel", "--app", "shop", "--host", "203.0.113.7", "--ssh-key", key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(cfg)
+	if !strings.Contains(string(data), "ssh_key: "+key) {
+		t.Fatalf("muken.yaml has no ssh_key:\n%s", data)
+	}
+	if _, _, err := runCmd(t, cmdInit, "-c", cfg, "--preset", "laravel", "--app", "shop"); err == nil {
+		t.Fatal("init must not overwrite an existing file")
+	}
+}
+
 func TestRenderCIPrintsTheWorkflow(t *testing.T) {
 	t.Chdir(t.TempDir())
 	out, errOut, err := runCmd(t, cmdRender, "--branch", "release", "ci")

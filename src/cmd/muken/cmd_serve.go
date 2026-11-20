@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/shinsenter/muken/internal/api"
+	"github.com/shinsenter/muken/internal/catalog"
 	"github.com/shinsenter/muken/internal/ui"
 )
 
@@ -96,6 +97,16 @@ func (b *serveBackend) Run(ctx context.Context, out *api.Lines, args []string) e
 		p.Fail(err)
 	}
 	return err
+}
+
+// Presets lists what `muken init --preset` knows, for the setup form.
+func (b *serveBackend) Presets() any {
+	all := catalog.All()
+	out := make([]map[string]string, len(all))
+	for i, preset := range all {
+		out[i] = map[string]string{"name": preset.Name, "title": preset.Title, "kind": preset.Kind}
+	}
+	return out
 }
 
 func (b *serveBackend) Status(ctx context.Context) (any, error) {

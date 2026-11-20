@@ -26,6 +26,8 @@ import (
 type Backend interface {
 	Run(ctx context.Context, out *Lines, args []string) error
 	Status(ctx context.Context) (any, error)
+	// Presets lists the images and apps that `muken init --preset` knows.
+	Presets() any
 }
 
 type Options struct {
@@ -64,6 +66,12 @@ func New(opt Options) http.Handler {
 	mux.HandleFunc("GET /v1/logs", s.logs)
 	mux.HandleFunc("GET /v1/config", s.config)
 	mux.HandleFunc("GET /v1/files", s.files)
+	mux.HandleFunc("GET /v1/presets", func(w http.ResponseWriter, r *http.Request) {
+		write(w, 200, map[string]any{"presets": opt.Backend.Presets()})
+	})
+	mux.HandleFunc("POST /v1/init", s.init)
+	mux.HandleFunc("GET /v1/server-key", s.keyShow)
+	mux.HandleFunc("POST /v1/server-key", s.keyCreate)
 	mux.HandleFunc("POST /v1/deploy", s.deploy)
 	mux.HandleFunc("POST /v1/rollback", s.start("rollback", func(*http.Request) ([]string, error) { return []string{"rollback"}, nil }))
 	mux.HandleFunc("POST /v1/up", s.start("up", func(*http.Request) ([]string, error) { return []string{"up"}, nil }))
@@ -107,10 +115,20 @@ func failErr(w http.ResponseWriter, err error) {
 	fail(w, 500, "failed", err.Error(), "")
 }
 
+// fail422 answers a command that failed because of its input, with the text it printed.
+func fail422(w http.ResponseWriter, err error, output string) {
+	var he *ui.HintError
+	hint := ""
+	if errors.As(err, &he) {
+		hint = he.Hint
+	}
+	write(w, 422, map[string]any{"error": map[string]string{"code": "failed", "message": err.Error(), "hint": hint}, "output": output})
+}
+
 // needConfig answers 409 when there is no muken.yaml.
 func (s *server) needConfig(w http.ResponseWriter) bool {
 	if _, err := os.Stat(s.opt.ConfigPath); err != nil {
-		fail(w, 409, "no_config", "no muken.yaml at "+s.opt.ConfigPath, "run `muken init` in the working folder, or mount the folder that has muken.yaml")
+		fail(w, 409, "no_config", "no muken.yaml at "+s.opt.ConfigPath, "open /setup in the web UI, or run `muken init` in the working folder, or mount the folder that has muken.yaml")
 		return false
 	}
 	return true

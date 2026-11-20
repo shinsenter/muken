@@ -53,6 +53,10 @@ func (f *fakeBackend) call(i int) string {
 	return strings.Join(f.calls[i], " ")
 }
 
+func (f *fakeBackend) Presets() any {
+	return []map[string]string{{"name": "laravel", "title": "Laravel", "kind": "app"}}
+}
+
 func (f *fakeBackend) Status(ctx context.Context) (any, error) {
 	return map[string]any{"release": "r1", "maintenance": false}, nil
 }
@@ -291,5 +295,85 @@ func TestCheckLoopback(t *testing.T) {
 		if err := CheckLoopback(addr); (err == nil) != ok {
 			t.Errorf("%s: %v", addr, err)
 		}
+	}
+}
+
+func TestAPIInitMakesTheFirstConfigOnly(t *testing.T) {
+	b := &fakeBackend{}
+	h, dir := setup(t, b)
+
+	if m := decode(t, call(h, "GET", "/v1/presets", "")); m["presets"] == nil {
+		t.Errorf("presets: %v", m)
+	}
+	rec := call(h, "POST", "/v1/init", `{"preset":"laravel","app":"shop","host":"203.0.113.7","domain":"a.example.com,b.example.com","email":"me@example.com","workers":"queue,scheduler","cloudflare":true}`)
+	if rec.Code != 201 {
+		t.Fatalf("init: %d %s", rec.Code, rec.Body)
+	}
+	want := "init --preset=laravel --app=shop --host=203.0.113.7 --domain=a.example.com,b.example.com --email=me@example.com --workers=queue,scheduler --cloudflare"
+	if got := b.call(-1); got != want {
+		t.Errorf("init ran\n got  %q\n want %q", got, want)
+	}
+	for _, flag := range []string{"--force", "--yes"} {
+		if strings.Contains(b.call(-1), flag) {
+			t.Errorf("init must not pass %s", flag)
+		}
+	}
+
+	os.WriteFile(filepath.Join(dir, "muken.yaml"), []byte("app: x\n"), 0o600)
+	before := b.count()
+	if rec := call(h, "POST", "/v1/init", `{"preset":"laravel","app":"shop"}`); rec.Code != 409 || b.count() != before {
+		t.Errorf("an existing file must stop init: %d, calls %d to %d", rec.Code, before, b.count())
+	}
+}
+
+func TestAPIInitRefusesBadFields(t *testing.T) {
+	b := &fakeBackend{}
+	h, _ := setup(t, b)
+	for _, body := range []string{
+		`{"app":"shop"}`,                         // no preset
+		`{"preset":"laravel"}`,                   // no app
+		`{"preset":"--force","app":"shop"}`,      // a flag as a value
+		`{"preset":"laravel","app":"Shop Name"}`, // a space
+		`{"preset":"laravel","app":"shop","host":"-oProxyCommand=x"}`,
+		`{"preset":"laravel","app":"shop","image":"a b"}`,
+		`{"preset":"laravel","app":"shop","db":"oracle"}`,
+		`{"preset":"laravel","app":"shop","ssh_key":"../x"}`,
+		`{"preset":"laravel","app":"shop","ssh_key":"nokey"}`,
+		`not json`,
+	} {
+		if rec := call(h, "POST", "/v1/init", body); rec.Code != 400 {
+			t.Errorf("%s: %d", body, rec.Code)
+		}
+	}
+	if b.count() != 0 {
+		t.Errorf("a bad request must run nothing, ran %d", b.count())
+	}
+}
+
+func TestAPIServerKeyShowsOnlyThePublicKey(t *testing.T) {
+	b := &fakeBackend{}
+	h, dir := setup(t, b)
+	if rec := call(h, "GET", "/v1/server-key", ""); rec.Code != 404 {
+		t.Errorf("no key yet: %d", rec.Code)
+	}
+	ssh := filepath.Join(dir, ".muken", ".ssh")
+	os.MkdirAll(ssh, 0o700)
+	os.WriteFile(filepath.Join(ssh, "id_ed25519"), []byte("PRIVATE"), 0o600)
+	os.WriteFile(filepath.Join(ssh, "id_ed25519.pub"), []byte("ssh-ed25519 AAAA muken\n"), 0o644)
+
+	rec := call(h, "POST", "/v1/server-key", "")
+	m := decode(t, rec)
+	if rec.Code != 200 || m["public_key"] != "ssh-ed25519 AAAA muken" || strings.Contains(rec.Body.String(), "PRIVATE") {
+		t.Errorf("%d %v", rec.Code, m)
+	}
+	if got := b.call(-1); got != "server key id_ed25519" {
+		t.Errorf("ran %q", got)
+	}
+	if rec := call(h, "GET", "/v1/server-key?name=../etc", ""); rec.Code != 400 {
+		t.Errorf("bad name: %d", rec.Code)
+	}
+	rec = call(h, "POST", "/v1/init", `{"preset":"laravel","app":"shop","ssh_key":"id_ed25519"}`)
+	if rec.Code != 201 || !strings.Contains(b.call(-1), "--ssh-key="+filepath.Join(ssh, "id_ed25519")) {
+		t.Errorf("init with a key: %d %s", rec.Code, b.call(-1))
 	}
 }
